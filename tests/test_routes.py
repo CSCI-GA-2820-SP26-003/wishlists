@@ -24,7 +24,7 @@ import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db, Wishlist
+from service.models import db, Wishlist, Item
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -56,6 +56,7 @@ class TestYourResourceService(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
+        db.session.query(Item).delete()  # clean up child records first
         db.session.query(Wishlist).delete()  # clean up the last tests
         db.session.commit()
 
