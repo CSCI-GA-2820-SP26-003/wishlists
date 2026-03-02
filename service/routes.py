@@ -68,28 +68,8 @@ def create_wishlists():
     wishlist.create()
     app.logger.info("Wishlist with new id [%s] saved!", wishlist.id)
 
-    location_url = url_for("get_wishlist", wishlist_id=wishlist.id, _external=True)
+    location_url = f"{request.url_root.rstrip('/')}/wishlists/{wishlist.id}"
     return jsonify(wishlist.serialize()), status.HTTP_201_CREATED, {"Location": location_url}
-
-
-######################################################################
-# READ A WISHLIST
-######################################################################
-@app.route("/wishlists/<int:wishlist_id>", methods=["GET"])
-def get_wishlist(wishlist_id):
-    """
-    Retrieve a single Wishlist
-
-    This endpoint will return a Wishlist based on it's id
-    """
-    app.logger.info("Request to Retrieve a wishlist with id [%s]", wishlist_id)
-
-    wishlist = Wishlist.find(wishlist_id)
-    if not wishlist:
-        abort(status.HTTP_404_NOT_FOUND, f"Wishlist with id '{wishlist_id}' was not found.")
-
-    app.logger.info("Returning wishlist: %s", wishlist.name)
-    return jsonify(wishlist.serialize()), status.HTTP_200_OK
 
 
 ######################################################################

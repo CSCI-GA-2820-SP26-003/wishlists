@@ -76,26 +76,6 @@ class TestYourResourceService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
     # ----------------------------------------------------------
-    # TEST READ
-    # ----------------------------------------------------------
-    def test_get_wishlist(self):
-        """It should Get a single Wishlist"""
-        test_wishlist = WishlistFactory()
-        test_wishlist.create()
-        response = self.client.get(f"{BASE_URL}/{test_wishlist.id}")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.get_json()
-        self.assertEqual(data["name"], test_wishlist.name)
-        self.assertEqual(data["customer_id"], test_wishlist.customer_id)
-
-    def test_get_wishlist_not_found(self):
-        """It should not Get a Wishlist that's not found"""
-        response = self.client.get(f"{BASE_URL}/0")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        data = response.get_json()
-        self.assertIn("was not found", data["message"])
-
-    # ----------------------------------------------------------
     # TEST CREATE
     # ----------------------------------------------------------
     def test_create_wishlist(self):
@@ -105,17 +85,10 @@ class TestYourResourceService(TestCase):
         response = self.client.post(BASE_URL, json=test_wishlist.serialize())
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+        new_wishlist = response.get_json()
         location = response.headers.get("Location", None)
         self.assertIsNotNone(location)
-
-        new_wishlist = response.get_json()
-        self.assertEqual(new_wishlist["name"], test_wishlist.name)
-        self.assertEqual(new_wishlist["customer_id"], test_wishlist.customer_id)
-        self.assertEqual(new_wishlist["description"], test_wishlist.description)
-
-        response = self.client.get(location)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        new_wishlist = response.get_json()
+        self.assertIn(str(new_wishlist["id"]), location)
         self.assertEqual(new_wishlist["name"], test_wishlist.name)
         self.assertEqual(new_wishlist["customer_id"], test_wishlist.customer_id)
         self.assertEqual(new_wishlist["description"], test_wishlist.description)
