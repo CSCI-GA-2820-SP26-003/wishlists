@@ -33,8 +33,13 @@ from service.common import status  # HTTP Status Codes
 @app.route("/")
 def index():
     """Root URL response"""
+    app.logger.info("Request for Root URL")
     return (
-        "Reminder: return some useful information in json format about the service here",
+        jsonify(
+            name="Wishlist REST API Service",
+            version="1.0",
+            paths=url_for("create_wishlists", _external=True),
+        ),
         status.HTTP_200_OK,
     )
 
@@ -43,4 +48,72 @@ def index():
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
 
-# Todo: Place your REST API code here ...
+######################################################################
+# CREATE A NEW WISHLIST
+######################################################################
+@app.route("/wishlists", methods=["POST"])
+def create_wishlists():
+    """
+    Create a Wishlist
+    This endpoint will create a Wishlist based the data in the body that is posted
+    """
+    app.logger.info("Request to Create a Wishlist...")
+    check_content_type("application/json")
+
+    wishlist = Wishlist()
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+    wishlist.deserialize(data)
+
+    wishlist.create()
+    app.logger.info("Wishlist with new id [%s] saved!", wishlist.id)
+
+    location_url = url_for("get_wishlist", wishlist_id=wishlist.id, _external=True)
+    return jsonify(wishlist.serialize()), status.HTTP_201_CREATED, {"Location": location_url}
+
+
+######################################################################
+# READ A WISHLIST
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>", methods=["GET"])
+def get_wishlist(wishlist_id):
+    """
+    Retrieve a single Wishlist
+
+    This endpoint will return a Wishlist based on it's id
+    """
+    app.logger.info("Request to Retrieve a wishlist with id [%s]", wishlist_id)
+
+    wishlist = Wishlist.find(wishlist_id)
+    if not wishlist:
+        abort(status.HTTP_404_NOT_FOUND, f"Wishlist with id '{wishlist_id}' was not found.")
+
+    app.logger.info("Returning wishlist: %s", wishlist.name)
+    return jsonify(wishlist.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+#  U T I L I T Y   F U N C T I O N S
+######################################################################
+
+
+######################################################################
+# Checks the ContentType of a request
+######################################################################
+def check_content_type(content_type) -> None:
+    """Checks that the media type is correct"""
+    if "Content-Type" not in request.headers:
+        app.logger.error("No Content-Type specified.")
+        abort(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            f"Content-Type must be {content_type}",
+        )
+
+    if request.headers["Content-Type"] == content_type:
+        return
+
+    app.logger.error("Invalid Content-Type: %s", request.headers["Content-Type"])
+    abort(
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        f"Content-Type must be {content_type}",
+    )
