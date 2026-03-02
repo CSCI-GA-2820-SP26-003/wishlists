@@ -25,7 +25,7 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Wishlist, Item
-from tests.factories import WishlistFactory
+from tests.factories import WishlistFactory, ItemFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -139,6 +139,55 @@ class TestYourResourceService(TestCase):
         """It should return 400 when customer_id is not a valid integer"""
         resp = self.client.get("/wishlists?customer_id=abc")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # ----------------------------------------------------------
+    # TEST READ WISHLIST
+    # ----------------------------------------------------------
+    def test_get_wishlist_with_no_items(self):
+        """It should Read an existing Wishlist with no items"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["id"], wishlist.id)
+        self.assertEqual(data["name"], wishlist.name)
+        self.assertEqual(data["customer_id"], wishlist.customer_id)
+        self.assertEqual(data["description"], wishlist.description)
+        self.assertIn("items", data)
+        self.assertEqual(len(data["items"]), 0)
+
+    def test_get_wishlist_with_two_items(self):
+        """It should Read an existing Wishlist with two items"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        ItemFactory(
+            wishlist_id=wishlist.id,
+            product_name="Sneakers",
+        ).create()
+        ItemFactory(
+            wishlist_id=wishlist.id,
+            product_name="Backpack",
+        ).create()
+
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["id"], wishlist.id)
+        self.assertIn("items", data)
+        self.assertEqual(len(data["items"]), 2)
+
+        for item in data["items"]:
+            self.assertIn("product_name", item)
+
+    def test_get_wishlist_not_found(self):
+        """It should return 404 when a Wishlist is missing"""
+        response = self.client.get(f"{BASE_URL}/999999")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
 
     # ----------------------------------------------------------
     # TEST CREATE
