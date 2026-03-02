@@ -190,6 +190,42 @@ class TestYourResourceService(TestCase):
         self.assertIn("message", data)
 
     # ----------------------------------------------------------
+    # TEST LIST ITEMS IN A WISHLIST
+    # ----------------------------------------------------------
+    def test_list_items_in_wishlist_with_two_items(self):
+        """It should list all Items in an existing Wishlist with two items"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        ItemFactory(wishlist_id=wishlist.id, product_name="Sneakers").create()
+        ItemFactory(wishlist_id=wishlist.id, product_name="Backpack").create()
+
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 2)
+
+        for item in data:
+            self.assertEqual(item["wishlist_id"], wishlist.id)
+
+    def test_list_items_in_wishlist_with_zero_items(self):
+        """It should return an empty list when the Wishlist has no items"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data, [])
+
+    def test_list_items_in_wishlist_not_found(self):
+        """It should return 404 when listing items for a missing Wishlist"""
+        response = self.client.get(f"{BASE_URL}/999999/items")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    # ----------------------------------------------------------
     # TEST CREATE
     # ----------------------------------------------------------
     def test_create_wishlist(self):
