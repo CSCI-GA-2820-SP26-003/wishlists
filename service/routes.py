@@ -48,6 +48,7 @@ def index():
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
 
+
 ######################################################################
 # LIST ALL WISHLISTS
 ######################################################################
@@ -100,7 +101,11 @@ def create_wishlists():
     app.logger.info("Wishlist with new id [%s] saved!", wishlist.id)
 
     location_url = f"{request.url_root.rstrip('/')}/wishlists/{wishlist.id}"
-    return jsonify(wishlist.serialize()), status.HTTP_201_CREATED, {"Location": location_url}
+    return (
+        jsonify(wishlist.serialize()),
+        status.HTTP_201_CREATED,
+        {"Location": location_url},
+    )
 
 
 ######################################################################

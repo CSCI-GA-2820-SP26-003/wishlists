@@ -193,9 +193,7 @@ class TestSadPaths(TestCase):
 
     def test_create_wishlist_wrong_content_type(self):
         """It should not Create a Wishlist with the wrong content type"""
-        response = self.client.post(
-            BASE_URL, data="hello", content_type="text/html"
-        )
+        response = self.client.post(BASE_URL, data="hello", content_type="text/html")
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
     def test_create_wishlist_missing_name(self):
