@@ -96,6 +96,22 @@ def get_wishlist(wishlist_id):
 
 
 ######################################################################
+# LIST ITEMS IN A WISHLIST
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>/items", methods=["GET"])
+def list_wishlist_items(wishlist_id):
+    """List all items belonging to a specific Wishlist"""
+    app.logger.info("Request to list items for wishlist id [%s]", wishlist_id)
+
+    wishlist = Wishlist.find(wishlist_id)
+    if not wishlist:
+        abort(status.HTTP_404_NOT_FOUND, f"Wishlist with id '{wishlist_id}' not found.")
+
+    results = [item.serialize() for item in wishlist.items]
+    return jsonify(results), status.HTTP_200_OK
+
+
+######################################################################
 # CREATE A NEW WISHLIST
 ######################################################################
 @app.route("/wishlists", methods=["POST"])
