@@ -30,6 +30,7 @@ from tests.factories import WishlistFactory
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
+BASE_URL = "/wishlists"
 
 
 ######################################################################
@@ -138,3 +139,75 @@ class TestYourResourceService(TestCase):
         """It should return 400 when customer_id is not a valid integer"""
         resp = self.client.get("/wishlists?customer_id=abc")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # ----------------------------------------------------------
+    # TEST CREATE
+    # ----------------------------------------------------------
+    def test_create_wishlist(self):
+        """It should Create a new Wishlist"""
+        test_wishlist = WishlistFactory()
+        logging.debug("Test Wishlist: %s", test_wishlist.serialize())
+        response = self.client.post(BASE_URL, json=test_wishlist.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        new_wishlist = response.get_json()
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+        self.assertIn(str(new_wishlist["id"]), location)
+        self.assertEqual(new_wishlist["name"], test_wishlist.name)
+        self.assertEqual(new_wishlist["customer_id"], test_wishlist.customer_id)
+        self.assertEqual(new_wishlist["description"], test_wishlist.description)
+
+
+######################################################################
+#  T E S T   S A D   P A T H S
+######################################################################
+class TestSadPaths(TestCase):
+    """Test REST Exception Handling"""
+
+    @classmethod
+    def setUpClass(cls):
+        """Run once before all tests"""
+        app.config["TESTING"] = True
+        app.config["DEBUG"] = False
+        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+            "DATABASE_URI",
+            "postgresql+psycopg://postgres:postgres@localhost:5432/testdb",
+        )
+        app.logger.setLevel(logging.CRITICAL)
+        app.app_context().push()
+
+    def setUp(self):
+        """Runs before each test"""
+        self.client = app.test_client()
+
+    def test_create_wishlist_no_data(self):
+        """It should not Create a Wishlist with missing data"""
+        response = self.client.post(BASE_URL, json={})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_wishlist_no_content_type(self):
+        """It should not Create a Wishlist with no content type"""
+        response = self.client.post(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_wishlist_wrong_content_type(self):
+        """It should not Create a Wishlist with the wrong content type"""
+        response = self.client.post(BASE_URL, data="hello", content_type="text/html")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_wishlist_missing_name(self):
+        """It should not Create a Wishlist with missing name"""
+        test_wishlist = WishlistFactory()
+        data = test_wishlist.serialize()
+        del data["name"]
+        response = self.client.post(BASE_URL, json=data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_wishlist_missing_customer_id(self):
+        """It should not Create a Wishlist with missing customer_id"""
+        test_wishlist = WishlistFactory()
+        data = test_wishlist.serialize()
+        del data["customer_id"]
+        response = self.client.post(BASE_URL, json=data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
