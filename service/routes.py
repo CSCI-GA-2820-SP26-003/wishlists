@@ -38,7 +38,7 @@ def index():
         jsonify(
             name="Wishlist REST API Service",
             version="1.0",
-            paths=url_for("create_wishlists", _external=True),
+            paths=url_for("list_wishlists", _external=True),
         ),
         status.HTTP_200_OK,
     )
@@ -47,6 +47,37 @@ def index():
 ######################################################################
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
+
+######################################################################
+# LIST ALL WISHLISTS
+######################################################################
+@app.route("/wishlists", methods=["GET"])
+def list_wishlists():
+    """Returns all of the Wishlists, optionally filtered by query params"""
+    app.logger.info("Request for wishlist list")
+
+    wishlists = []
+    customer_id = request.args.get("customer_id")
+    name = request.args.get("name")
+
+    if customer_id:
+        app.logger.info("Filtering by customer_id: %s", customer_id)
+        try:
+            customer_id = int(customer_id)
+        except ValueError:
+            abort(status.HTTP_400_BAD_REQUEST, f"Invalid customer_id: {customer_id}")
+        wishlists = Wishlist.find_by_customer_id(customer_id)
+    elif name:
+        app.logger.info("Filtering by name: %s", name)
+        wishlists = Wishlist.find_by_name(name)
+    else:
+        app.logger.info("Returning all wishlists")
+        wishlists = Wishlist.all()
+
+    results = [wishlist.serialize() for wishlist in wishlists]
+    app.logger.info("Returning %d wishlists", len(results))
+    return jsonify(results), status.HTTP_200_OK
+
 
 ######################################################################
 # CREATE A NEW WISHLIST
