@@ -25,6 +25,7 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Wishlist, Item
+from tests.factories import WishlistFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -65,6 +66,19 @@ class TestYourResourceService(TestCase):
         db.session.remove()
 
     ######################################################################
+    #  H E L P E R   M E T H O D S
+    ######################################################################
+
+    def _create_wishlists(self, count):
+        """Factory method to create wishlists in bulk"""
+        wishlists = []
+        for _ in range(count):
+            wishlist = WishlistFactory()
+            wishlist.create()
+            wishlists.append(wishlist)
+        return wishlists
+
+    ######################################################################
     #  P L A C E   T E S T   C A S E S   H E R E
     ######################################################################
 
@@ -73,4 +87,54 @@ class TestYourResourceService(TestCase):
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-    # Todo: Add your test cases here...
+    # ----------------------------------------------------------
+    # TEST LIST ALL WISHLISTS
+    # ----------------------------------------------------------
+
+    def test_list_all_wishlists(self):
+        """It should List all Wishlists"""
+        self._create_wishlists(5)
+        resp = self.client.get("/wishlists")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 5)
+
+    def test_list_wishlists_by_customer_id(self):
+        """It should List Wishlists filtered by customer_id"""
+        wishlists = self._create_wishlists(3)
+        target = wishlists[0]
+        resp = self.client.get(f"/wishlists?customer_id={target.customer_id}")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        for wl in data:
+            self.assertEqual(wl["customer_id"], target.customer_id)
+
+    def test_list_wishlists_by_customer_id_no_results(self):
+        """It should return an empty list when customer_id has no wishlists"""
+        self._create_wishlists(3)
+        resp = self.client.get("/wishlists?customer_id=0")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 0)
+
+    def test_list_wishlists_by_name(self):
+        """It should List Wishlists filtered by name"""
+        wishlists = self._create_wishlists(3)
+        target = wishlists[0]
+        resp = self.client.get(f"/wishlists?name={target.name}")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        for wl in data:
+            self.assertEqual(wl["name"], target.name)
+
+    def test_list_all_wishlists_empty(self):
+        """It should return an empty list when no Wishlists exist"""
+        resp = self.client.get("/wishlists")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 0)
+
+    def test_list_wishlists_bad_customer_id(self):
+        """It should return 400 when customer_id is not a valid integer"""
+        resp = self.client.get("/wishlists?customer_id=abc")
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
