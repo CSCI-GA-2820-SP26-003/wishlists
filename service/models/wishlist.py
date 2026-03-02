@@ -99,3 +99,9 @@ class Wishlist(db.Model, PersistentBase):
         """Returns all Wishlists with the given name"""
         logger.info("Processing name query for %s ...", name)
         return cls.query.filter(cls.name == name)
+
+    @classmethod
+    def find_by_customer_id(cls, customer_id):
+        """Returns all Wishlists for the given customer_id"""
+        logger.info("Processing customer_id query for %s ...", customer_id)
+        return cls.query.filter(cls.customer_id == customer_id)
