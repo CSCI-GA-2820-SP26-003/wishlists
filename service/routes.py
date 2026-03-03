@@ -219,6 +219,51 @@ def delete_wishlists(wishlist_id):
     return {}, status.HTTP_204_NO_CONTENT
 
 
+@app.route("/wishlists/<int:wishlist_id>", methods=["PUT"])
+def update_wishlists(wishlist_id):
+    """
+    Update a Wishlist
+
+    This endpoint will update a Wishlist based the body that is posted
+    """
+    app.logger.info("Request to update wishlist with id: %s", wishlist_id)
+    check_content_type("application/json")
+
+    # See if the wishlist exists and abort if it doesn't
+    wishlist = Wishlist.find(wishlist_id)
+    if not wishlist:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Wishlist with id '{wishlist_id}' was not found.",
+        )
+
+    data = request.get_json()
+
+    if not data or "name" not in data:
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            "Wishlist must have a name",
+        )
+    if not isinstance(data["name"], str) or not data["name"].strip():
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            "Wishlist must have a valid name",
+        )
+    wishlist.name = data["name"].strip()
+
+    if "description" in data:
+        if not isinstance(data["description"], str):
+            abort(
+                status.HTTP_400_BAD_REQUEST,
+                "Wishlist must have a valid description",
+            )
+        wishlist.description = data["description"].strip()
+
+    wishlist.update()
+
+    return jsonify(wishlist.serialize()), status.HTTP_200_OK
+
+
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
