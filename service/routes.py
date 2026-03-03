@@ -196,13 +196,14 @@ def create_wishlists():
         {"Location": location_url},
     )
 
+
 ######################################################################
 # DELETE A WISHLIST
 ######################################################################
 @app.route("/wishlists/<int:wishlist_id>", methods=["DELETE"])
 def delete_wishlists(wishlist_id):
     """
-    Delete a Wishlist 
+    Delete a Wishlist
 
     This endpoint will delete a Wishlist based the id specified in the path
     """

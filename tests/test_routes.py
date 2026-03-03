@@ -374,7 +374,8 @@ class TestYourResourceService(TestCase):
         response = self.client.delete(f"{BASE_URL}/0")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
-        
+
+
 ######################################################################
 #  T E S T   S A D   P A T H S
 ######################################################################
