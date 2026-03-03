@@ -112,6 +112,28 @@ def list_wishlist_items(wishlist_id):
 
 
 ######################################################################
+# READ AN ITEM IN A WISHLIST
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>/items/<int:item_id>", methods=["GET"])
+def get_wishlist_item(wishlist_id, item_id):
+    """Retrieve a single Item from a Wishlist by its ID"""
+    app.logger.info(
+        "Request to Retrieve item %s from wishlist %s", item_id, wishlist_id
+    )
+
+    wishlist = Wishlist.find(wishlist_id)
+    if not wishlist:
+        abort(status.HTTP_404_NOT_FOUND, f"Wishlist with id '{wishlist_id}' not found.")
+
+    item = Item.find(item_id)
+    if not item or item.wishlist_id != wishlist_id:
+        abort(status.HTTP_404_NOT_FOUND, f"Item with id '{item_id}' not found.")
+
+    app.logger.info("Returning item: %s", item.product_name)
+    return jsonify(item.serialize()), status.HTTP_200_OK
+
+
+######################################################################
 # CREATE ITEM IN A WISHLIST
 ######################################################################
 @app.route("/wishlists/<int:wishlist_id>/items", methods=["POST"])
@@ -174,13 +196,14 @@ def create_wishlists():
         {"Location": location_url},
     )
 
+
 ######################################################################
 # DELETE A WISHLIST
 ######################################################################
 @app.route("/wishlists/<int:wishlist_id>", methods=["DELETE"])
 def delete_wishlists(wishlist_id):
     """
-    Delete a Wishlist 
+    Delete a Wishlist
 
     This endpoint will delete a Wishlist based the id specified in the path
     """

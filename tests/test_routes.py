@@ -226,6 +226,69 @@ class TestYourResourceService(TestCase):
         self.assertIn("message", data)
 
     # ----------------------------------------------------------
+    # TEST READ ITEM IN A WISHLIST
+    # ----------------------------------------------------------
+    def test_get_item_in_wishlist(self):
+        """It should Read an Item from a Wishlist"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        item = ItemFactory(wishlist_id=wishlist.id, product_name="Sneakers")
+        item.create()
+
+        response = self.client.get(
+            f"{BASE_URL}/{wishlist.id}/items/{item.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["id"], item.id)
+        self.assertEqual(data["wishlist_id"], wishlist.id)
+        self.assertEqual(data["product_name"], item.product_name)
+        self.assertEqual(data["product_id"], item.product_id)
+        self.assertEqual(data["variant_id"], item.variant_id)
+
+    def test_get_item_wishlist_not_found(self):
+        """It should return 404 when Wishlist is missing"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        item = ItemFactory(wishlist_id=wishlist.id)
+        item.create()
+
+        response = self.client.get(
+            f"{BASE_URL}/999999/items/{item.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_get_item_not_found(self):
+        """It should return 404 when Item is missing"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        response = self.client.get(
+            f"{BASE_URL}/{wishlist.id}/items/999999"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_get_item_not_in_wishlist(self):
+        """It should return 404 when Item does not belong to Wishlist"""
+        wishlist_a = WishlistFactory()
+        wishlist_a.create()
+        wishlist_b = WishlistFactory()
+        wishlist_b.create()
+        item = ItemFactory(wishlist_id=wishlist_a.id)
+        item.create()
+
+        response = self.client.get(
+            f"{BASE_URL}/{wishlist_b.id}/items/{item.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    # ----------------------------------------------------------
     # TEST CREATE ITEM IN A WISHLIST
     # ----------------------------------------------------------
     def test_create_item_in_wishlist(self):
@@ -311,7 +374,8 @@ class TestYourResourceService(TestCase):
         response = self.client.delete(f"{BASE_URL}/0")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
-        
+
+
 ######################################################################
 #  T E S T   S A D   P A T H S
 ######################################################################
