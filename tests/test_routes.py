@@ -293,7 +293,7 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_wishlist["customer_id"], test_wishlist.customer_id)
         self.assertEqual(new_wishlist["description"], test_wishlist.description)
 
-# ----------------------------------------------------------
+    # ----------------------------------------------------------
     # TEST DELETE
     # ----------------------------------------------------------
 
