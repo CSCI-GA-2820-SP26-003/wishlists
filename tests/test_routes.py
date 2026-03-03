@@ -226,6 +226,56 @@ class TestYourResourceService(TestCase):
         self.assertIn("message", data)
 
     # ----------------------------------------------------------
+    # TEST CREATE ITEM IN A WISHLIST
+    # ----------------------------------------------------------
+    def test_create_item_in_wishlist(self):
+        """It should Create an Item in a Wishlist"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        test_item = ItemFactory(wishlist_id=wishlist.id)
+        item_data = {
+            "product_id": test_item.product_id,
+            "product_name": test_item.product_name,
+            "quantity": test_item.quantity,
+            "variant_id": test_item.variant_id,
+        }
+        response = self.client.post(
+            f"{BASE_URL}/{wishlist.id}/items", json=item_data
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        new_item = response.get_json()
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+        self.assertIn(str(new_item["id"]), location)
+        self.assertEqual(new_item["wishlist_id"], wishlist.id)
+        self.assertEqual(new_item["product_id"], test_item.product_id)
+        self.assertEqual(new_item["product_name"], test_item.product_name)
+        self.assertEqual(new_item["variant_id"], test_item.variant_id)
+
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["product_name"], test_item.product_name)
+
+    def test_create_item_wishlist_not_found(self):
+        """It should return 404 when creating an Item in a missing Wishlist"""
+        test_item = ItemFactory()
+        item_data = {
+            "product_id": test_item.product_id,
+            "product_name": test_item.product_name,
+            "quantity": test_item.quantity,
+            "variant_id": test_item.variant_id,
+        }
+        response = self.client.post(
+            f"{BASE_URL}/999999/items", json=item_data
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    # ----------------------------------------------------------
     # TEST CREATE
     # ----------------------------------------------------------
     def test_create_wishlist(self):
@@ -295,4 +345,76 @@ class TestSadPaths(TestCase):
         data = test_wishlist.serialize()
         del data["customer_id"]
         response = self.client.post(BASE_URL, json=data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_item_no_data(self):
+        """It should not Create an Item with missing data"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        response = self.client.post(
+            f"{BASE_URL}/{wishlist.id}/items", json={}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_item_no_content_type(self):
+        """It should not Create an Item with no content type"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        response = self.client.post(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_item_wrong_content_type(self):
+        """It should not Create an Item with the wrong content type"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        response = self.client.post(
+            f"{BASE_URL}/{wishlist.id}/items",
+            data="hello",
+            content_type="text/html",
+        )
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_item_missing_product_id(self):
+        """It should not Create an Item with missing product_id"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        test_item = ItemFactory(wishlist_id=wishlist.id)
+        item_data = {
+            "product_name": test_item.product_name,
+            "quantity": test_item.quantity,
+            "variant_id": test_item.variant_id,
+        }
+        response = self.client.post(
+            f"{BASE_URL}/{wishlist.id}/items", json=item_data
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_item_missing_product_name(self):
+        """It should not Create an Item with missing product_name"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        test_item = ItemFactory(wishlist_id=wishlist.id)
+        item_data = {
+            "product_id": test_item.product_id,
+            "quantity": test_item.quantity,
+            "variant_id": test_item.variant_id,
+        }
+        response = self.client.post(
+            f"{BASE_URL}/{wishlist.id}/items", json=item_data
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_item_missing_variant_id(self):
+        """It should not Create an Item with missing variant_id"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        test_item = ItemFactory(wishlist_id=wishlist.id)
+        item_data = {
+            "product_id": test_item.product_id,
+            "product_name": test_item.product_name,
+            "quantity": test_item.quantity,
+        }
+        response = self.client.post(
+            f"{BASE_URL}/{wishlist.id}/items", json=item_data
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
