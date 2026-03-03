@@ -23,7 +23,7 @@ and Delete Wishlist
 
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
-from service.models import Wishlist
+from service.models import Wishlist, Item
 from service.common import status  # HTTP Status Codes
 
 
@@ -109,6 +109,42 @@ def list_wishlist_items(wishlist_id):
 
     results = [item.serialize() for item in wishlist.items]
     return jsonify(results), status.HTTP_200_OK
+
+
+######################################################################
+# CREATE ITEM IN A WISHLIST
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>/items", methods=["POST"])
+def create_wishlist_items(wishlist_id):
+    """
+    Create an Item in a Wishlist
+    This endpoint will create an Item in the specified Wishlist
+    """
+    app.logger.info("Request to Create an Item in wishlist id [%s]", wishlist_id)
+
+    wishlist = Wishlist.find(wishlist_id)
+    if not wishlist:
+        abort(status.HTTP_404_NOT_FOUND, f"Wishlist with id '{wishlist_id}' not found.")
+
+    check_content_type("application/json")
+
+    item = Item()
+    data = request.get_json()
+    data["wishlist_id"] = wishlist_id
+    app.logger.info("Processing: %s", data)
+    item.deserialize(data)
+
+    item.create()
+    app.logger.info("Item with new id [%s] saved!", item.id)
+
+    location_url = (
+        f"{request.url_root.rstrip('/')}/wishlists/{wishlist_id}/items/{item.id}"
+    )
+    return (
+        jsonify(item.serialize()),
+        status.HTTP_201_CREATED,
+        {"Location": location_url},
+    )
 
 
 ######################################################################
