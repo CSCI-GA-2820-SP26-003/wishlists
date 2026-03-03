@@ -28,7 +28,7 @@ from service.common import status  # HTTP Status Codes
 
 
 ######################################################################
-# GET INDEX
+# GET INDEX 
 ######################################################################
 @app.route("/")
 def index():
