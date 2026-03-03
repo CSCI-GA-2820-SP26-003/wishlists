@@ -32,11 +32,7 @@ from service.common import status  # HTTP Status Codes
 ######################################################################
 @app.route("/")
 def index():
-    """Root URL response"""
-    return (
-        "Reminder: return some useful information in json format about the service here",
-        status.HTTP_200_OK,
-    )
+    return jsonify(name="Wishlist Service", version="1.0"), status.HTTP_200_OK
 
 
 ######################################################################
@@ -44,3 +40,45 @@ def index():
 ######################################################################
 
 # Todo: Place your REST API code here ...
+######################################################################
+# DELETE A WISHLIST
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>", methods=["DELETE"])
+def delete_wishlists(wishlist_id):
+    """
+    Delete a Wishlist 
+
+    This endpoint will delete a Wishlist  based the id specified in the path
+    """
+    app.logger.info("Request to Delete a wishlist with id [%s]", wishlist_id)
+
+    # Delete the Wishlist  if it exists
+    wishlist = Wishlist.find(wishlist_id)
+    if wishlist:
+        app.logger.info("Wishlist  with ID: %d found.", wishlist.id)
+        wishlist.delete()
+
+    app.logger.info("Wishlist  with ID: %d delete complete.", wishlist_id)
+    return {}, status.HTTP_204_NO_CONTENT
+
+
+######################################################################
+# Checks the ContentType of a request
+######################################################################
+def check_content_type(content_type) -> None:
+    """Checks that the media type is correct"""
+    if "Content-Type" not in request.headers:
+        app.logger.error("No Content-Type specified.")
+        abort(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            f"Content-Type must be {content_type}",
+        )
+
+    if request.headers["Content-Type"] == content_type:
+        return
+
+    app.logger.error("Invalid Content-Type: %s", request.headers["Content-Type"])
+    abort(
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        f"Content-Type must be {content_type}",
+    )
