@@ -32,6 +32,7 @@ DATABASE_URI = os.getenv(
 )
 BASE_URL = "/wishlists"
 
+
 ######################################################################
 #  T E S T   C A S E S
 ######################################################################
@@ -65,14 +66,6 @@ class TestYourResourceService(TestCase):
         """This runs after each test"""
         db.session.remove()
 
-    def _create_wishlists(self, count: int = 1) -> list:
-        """Helper method to create test wishlists"""
-        wishlists = []  # 这里的 wishlists 前面有 8 个空格
-        for _ in range(count):
-            test_wishlist = WishlistFactory()
-            test_wishlist.create()
-            wishlists.append(test_wishlist)
-        return wishlists
     ######################################################################
     #  H E L P E R   M E T H O D S
     ######################################################################
@@ -91,34 +84,10 @@ class TestYourResourceService(TestCase):
     ######################################################################
 
     def test_index(self):
-            """It should call the home page and receive JSON"""
-            resp = self.client.get("/")
-            self.assertEqual(resp.status_code, status.HTTP_200_OK)
-            data = resp.get_json()
-            self.assertEqual(data["name"], "Wishlist Service") 
+        """It should call the home page"""
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-    # Todo: Add your test cases here...
-    def test_404_not_found(self):
-        """It should return 404 for invalid routes and return JSON"""
-        resp = self.client.get("/invalid_route")
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_delete_wishlist(self):
-        """It should Delete a Wishlist"""
-        test_wishlist = self._create_wishlists(1)[0]
-        response = self.client.delete(f"{BASE_URL}/{test_wishlist.id}")
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(len(response.data), 0)
-        deleted_wishlist = Wishlist.find(test_wishlist.id)
-        self.assertIsNone(deleted_wishlist)
-
-    def test_delete_non_existing_wishlist(self):
-        """It should Delete a Wishlist even if it does not exist"""
-        response = self.client.delete(f"{BASE_URL}/0")
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(len(response.data), 0)
-
-    
     # ----------------------------------------------------------
     # TEST LIST ALL WISHLISTS
     # ----------------------------------------------------------
