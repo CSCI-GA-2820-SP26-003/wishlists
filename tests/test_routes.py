@@ -293,7 +293,25 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_wishlist["customer_id"], test_wishlist.customer_id)
         self.assertEqual(new_wishlist["description"], test_wishlist.description)
 
+    # ----------------------------------------------------------
+    # TEST DELETE
+    # ----------------------------------------------------------
 
+    def test_delete_wishlist(self):
+        """It should Delete a Wishlist"""
+        test_wishlist = self._create_wishlists(1)[0]
+        response = self.client.delete(f"{BASE_URL}/{test_wishlist.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+        deleted_wishlist = Wishlist.find(test_wishlist.id)
+        self.assertIsNone(deleted_wishlist)
+
+    def test_delete_non_existing_wishlist(self):
+        """It should Delete a Wishlist even if it does not exist"""
+        response = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+        
 ######################################################################
 #  T E S T   S A D   P A T H S
 ######################################################################

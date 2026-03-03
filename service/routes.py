@@ -174,6 +174,27 @@ def create_wishlists():
         {"Location": location_url},
     )
 
+######################################################################
+# DELETE A WISHLIST
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>", methods=["DELETE"])
+def delete_wishlists(wishlist_id):
+    """
+    Delete a Wishlist 
+
+    This endpoint will delete a Wishlist based the id specified in the path
+    """
+    app.logger.info("Request to Delete a wishlist with id [%s]", wishlist_id)
+
+    # Delete the Wishlist if it exists
+    wishlist = Wishlist.find(wishlist_id)
+    if wishlist:
+        app.logger.info("Wishlist with ID: %d found.", wishlist.id)
+        wishlist.delete()
+
+    app.logger.info("Wishlist with ID: %d delete complete.", wishlist_id)
+    return {}, status.HTTP_204_NO_CONTENT
+
 
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
