@@ -312,6 +312,59 @@ class TestYourResourceService(TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["product_name"], test_item.product_name)
 
+    def test_create_duplicate_item_in_wishlist(self):
+        """It should return 409 Conflict when adding a duplicate item"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        test_item = ItemFactory(wishlist_id=wishlist.id)
+        item_data = {
+            "product_id": test_item.product_id,
+            "product_name": test_item.product_name,
+            "quantity": test_item.quantity,
+            "variant_id": test_item.variant_id,
+        }
+        # First create should succeed
+        response = self.client.post(f"{BASE_URL}/{wishlist.id}/items", json=item_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Duplicate create should return 409
+        response = self.client.post(f"{BASE_URL}/{wishlist.id}/items", json=item_data)
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+        # Verify only 1 item exists
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 1)
+
+    # ----------------------------------------------------------
+    # TEST UPDATE ITEM IN A WISHLIST
+    # ----------------------------------------------------------
+
+    def test_update_item_in_wishlist(self):
+        """It should Update an Item in a Wishlist"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        item = ItemFactory(wishlist_id=wishlist.id)
+        item.create()
+
+        # Update the item
+        updated_data = {
+            "product_id": item.product_id,
+            "product_name": "Updated Product",
+            "quantity": 5,
+            "variant_id": item.variant_id,
+        }
+        response = self.client.put(
+            f"{BASE_URL}/{wishlist.id}/items/{item.id}", json=updated_data
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["product_name"], "Updated Product")
+        self.assertEqual(data["quantity"], 5)
+        self.assertEqual(data["wishlist_id"], wishlist.id)
+
     def test_create_item_wishlist_not_found(self):
         """It should return 404 when creating an Item in a missing Wishlist"""
         test_item = ItemFactory()
@@ -612,3 +665,78 @@ class TestSadPaths(TestCase):
         # Verify the item still exists in wishlist_a
         response = self.client.get(f"{BASE_URL}/{wishlist_a.id}/items")
         self.assertEqual(len(response.get_json()), 1)
+
+    # ----------------------------------------------------------
+    # TEST UPDATE ITEM SAD PATHS
+    # ----------------------------------------------------------
+
+    def test_update_item_wishlist_not_found(self):
+        """It should return 404 when updating an item in a non-existent wishlist"""
+        payload = {
+            "product_id": "P1",
+            "product_name": "Test",
+            "quantity": 1,
+            "variant_id": "V1",
+        }
+        response = self.client.put(f"{BASE_URL}/999999/items/1", json=payload)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_update_item_not_found(self):
+        """It should return 404 when updating a non-existent item"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        payload = {
+            "product_id": "P1",
+            "product_name": "Test",
+            "quantity": 1,
+            "variant_id": "V1",
+        }
+        response = self.client.put(
+            f"{BASE_URL}/{wishlist.id}/items/999999", json=payload
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_update_item_not_in_wishlist(self):
+        """It should return 404 when updating an item that belongs to another wishlist"""
+        wishlist_a = WishlistFactory()
+        wishlist_a.create()
+        wishlist_b = WishlistFactory()
+        wishlist_b.create()
+        item = ItemFactory(wishlist_id=wishlist_a.id)
+        item.create()
+        payload = {
+            "product_id": "P1",
+            "product_name": "Test",
+            "quantity": 1,
+            "variant_id": "V1",
+        }
+        response = self.client.put(
+            f"{BASE_URL}/{wishlist_b.id}/items/{item.id}", json=payload
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_update_item_no_content_type(self):
+        """It should return 415 when updating an item with no content type"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        item = ItemFactory(wishlist_id=wishlist.id)
+        item.create()
+        response = self.client.put(f"{BASE_URL}/{wishlist.id}/items/{item.id}")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_update_item_bad_data(self):
+        """It should return 400 when updating an item with missing required fields"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        item = ItemFactory(wishlist_id=wishlist.id)
+        item.create()
+        response = self.client.put(f"{BASE_URL}/{wishlist.id}/items/{item.id}", json={})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
