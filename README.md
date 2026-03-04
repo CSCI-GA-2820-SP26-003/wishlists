@@ -1,63 +1,104 @@
-# NYU DevOps Project Template
+# Wishlist Service
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/Language-Python-blue.svg)](https://python.org/)
-
-This is a skeleton you can use to start your projects.
-
-**Note:** _Feel free to overwrite this `README.md` file with the one that describes your project._
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 
 ## Overview
+This Wishlist service is a REST API for managing wishlists and wishlist items. This code is modeled after the sample-accounts code which can be found [sample-accounts](https://github.com/nyu-devops/sample-accounts).
 
-This project template contains starter code for your class project. The `/service` folder contains your `models.py` file for your model and a `routes.py` file for your service. The `/tests` folder has test case starter code for testing the model and the service separately. All you need to do is add your functionality. You can use the [lab-flask-tdd](https://github.com/nyu-devops/lab-flask-tdd) for code examples to copy from.
+## What this service does
 
-## Automatic Setup
+- Create, list, read, update, and delete wishlists
+- List items in a wishlist
+- Create and read items in a wishlist
+- Filter wishlists by `customer_id` or `name`
 
-The best way to use this repo is to start your own repo using it as a git template. To do this just press the green **Use this template** button in GitHub and this will become the source for your repository.
-
-## Manual Setup
-
-You can also clone this repository and then copy and paste the starter code into your project repo folder on your local computer. Be careful not to copy over your own `README.md` file so be selective in what you copy.
-
-There are 4 hidden files that you will need to copy manually if you use the Mac Finder or Windows Explorer to copy files from this folder into your repo folder.
-
-These should be copied using a bash shell as follows:
-
-```bash
+## Quick Start
+** If you use Mac Finder or Windows Explorer you will need to copy:
+```
     cp .gitignore  ../<your_repo_folder>/
     cp .flaskenv ../<your_repo_folder>/
     cp .gitattributes ../<your_repo_folder>/
 ```
 
-## Contents
+### 1) Install dependencies
+```bash
+make install
+```
+### 2) Initialize the database
+```bash
+flask db-create
+```
+### 3) Run the service
+```bash
+make run
+```
 
-The project contains the following:
+### 4) Run tests
+```bash
+make test
+```
+
+## API Endpoints
+
+Base resource: `/wishlists`
+
+### Wishlists
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/wishlists` | List wishlists |
+| POST | `/wishlists` | Create a wishlist |
+| GET | `/wishlists/{wishlist_id}` | Get one wishlist |
+| PUT | `/wishlists/{wishlist_id}` | Update wishlist name/description |
+| DELETE | `/wishlists/{wishlist_id}` | Delete a wishlist |
+
+### Wishlist Items
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/wishlists/{wishlist_id}/items` | List items in a wishlist |
+| POST | `/wishlists/{wishlist_id}/items` | Create an item in a wishlist |
+| GET | `/wishlists/{wishlist_id}/items/{item_id}` | Get one item in a wishlist |
+| PUT | `/wishlists/{wishlist_id}/items/{item_id}` | Update item in wishlist |
+| DELETE | `/wishlists/{wishlist_id}/items/{item_id}` | Deletes item in a wishlist |
+
+## Project Layout
 
 ```text
-.gitignore          - this will ignore vagrant and other metadata files
-.flaskenv           - Environment variables to configure Flask
-.gitattributes      - File to gix Windows CRLF issues
-.devcontainers/     - Folder with support for VSCode Remote Containers
-dot-env-example     - copy to .env to use environment variables
-pyproject.toml      - Poetry list of Python libraries required by your code
+.gitignore                  - ignore Git metadata and local artifacts
+.flaskenv                   - Flask environment defaults
+.gitattributes              - git text/binary attributes
+.devcontainer/              - VS Code dev container config
+dot-env-example             - example environment variables file
+LICENSE                     - Apache 2.0 license
+Makefile                    - common development commands
+Pipfile                     - Python dependencies
+Procfile                    - process definition for running app
+setup.cfg                   - tool configuration (lint/test)
+wsgi.py                     - WSGI entrypoint
 
-service/                   - service python package
-├── __init__.py            - package initializer
-├── config.py              - configuration parameters
-├── models.py              - module with business models
-├── routes.py              - module with service routes
-└── common                 - common code package
-    ├── cli_commands.py    - Flask command to recreate all tables
-    ├── error_handlers.py  - HTTP error handling code
-    ├── log_handlers.py    - logging setup code
-    └── status.py          - HTTP status constants
+service/
+├── __init__.py                - package initializer
+├── routes.py                  - API routes
+├── config.py                  - configuration parameters
+├── common/
+│   ├── cli_commands.py        - Flask command to recreate all tables
+│   ├── error_handlers.py      - HTTP error handling code
+│   ├── log_handlers.py        - logging setup code
+│   └── status.py              - HTTP status constants
+└── models/
+    ├── __init__.py
+    ├── wishlist.py            - Database model for Wishlist
+    ├── item.py                - Database model for Item
+    └── persistent_base.py
 
-tests/                     - test cases package
-├── __init__.py            - package initializer
-├── factories.py           - Factory for testing with fake objects
-├── test_cli_commands.py   - test suite for the CLI
-├── test_models.py         - test suite for business models
-└── test_routes.py         - test suite for service routes
+tests/                          - test cases package
+├── __init__.py                 - package initializer
+├── test_routes.py              - Factory for testing with fake objects
+├── test_wishlist_model.py      - test suite for the CLI
+├── test_item_model.py          - test suite for business models
+└── test_cli_commands.py        - test suite for service routes
 ```
 
 ## License
