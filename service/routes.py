@@ -25,23 +25,48 @@ from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
 from service.models import Wishlist, Item
 from service.common import status  # HTTP Status Codes
+from service.landing import get_landing_html
 
 
 ######################################################################
 # GET INDEX
 ######################################################################
+def _index_json():
+    return jsonify(
+        name="Wishlist REST API Service",
+        version="1.0",
+        message="Wishlist service is up",
+        paths=url_for("list_wishlists", _external=True),
+        endpoints={
+            "Wishlists": [
+                {"method": "GET", "path": "/wishlists", "description": "List wishlists"},
+                {"method": "POST", "path": "/wishlists", "description": "Create a wishlist"},
+                {"method": "GET", "path": "/wishlists/{wishlist_id}", "description": "Get one wishlist"},
+                {"method": "PUT", "path": "/wishlists/{wishlist_id}", "description": "Update wishlist name/description"},
+                {"method": "DELETE", "path": "/wishlists/{wishlist_id}", "description": "Delete a wishlist"},
+            ],
+            "Wishlist Items": [
+                {"method": "GET", "path": "/wishlists/{wishlist_id}/items", "description": "List items in a wishlist"},
+                {"method": "POST", "path": "/wishlists/{wishlist_id}/items", "description": "Create an item in a wishlist"},
+                {"method": "GET", "path": "/wishlists/{wishlist_id}/items/{item_id}", "description": "Get one item in a wishlist"},
+                {"method": "PUT", "path": "/wishlists/{wishlist_id}/items/{item_id}", "description": "Update item in wishlist"},
+                {"method": "DELETE", "path": "/wishlists/{wishlist_id}/items/{item_id}", "description": "Delete item from wishlist"},
+            ],
+        },
+    ), status.HTTP_200_OK
+
+
+def _index_html():
+    return get_landing_html(), status.HTTP_200_OK, {"Content-Type": "text/html; charset=utf-8"}
+
+
 @app.route("/")
 def index():
-    """Root URL response"""
+    """Root URL response – HTML landing page or JSON for API clients"""
     app.logger.info("Request for Root URL")
-    return (
-        jsonify(
-            name="Wishlist REST API Service",
-            version="1.0",
-            paths=url_for("list_wishlists", _external=True),
-        ),
-        status.HTTP_200_OK,
-    )
+    if "application/json" in request.headers.get("Accept", ""):
+        return _index_json()
+    return _index_html()
 
 
 ######################################################################
