@@ -219,6 +219,37 @@ def delete_wishlists(wishlist_id):
     return {}, status.HTTP_204_NO_CONTENT
 
 
+######################################################################
+# DELETE AN ITEM FROM A WISHLIST
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>/items/<int:item_id>", methods=["DELETE"])
+def delete_wishlist_item(wishlist_id, item_id):
+    """
+    Delete an Item from a Wishlist
+
+    This endpoint will delete an Item from the specified Wishlist
+    """
+    app.logger.info("Request to Delete item %s from wishlist %s", item_id, wishlist_id)
+
+    wishlist = Wishlist.find(wishlist_id)
+    if not wishlist:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Wishlist with id '{wishlist_id}' not found.",
+        )
+
+    item = Item.find(item_id)
+    if not item or item.wishlist_id != wishlist_id:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Item with id '{item_id}' not found in wishlist '{wishlist_id}'.",
+        )
+
+    item.delete()
+    app.logger.info("Item with ID: %d deleted.", item_id)
+    return {}, status.HTTP_204_NO_CONTENT
+
+
 @app.route("/wishlists/<int:wishlist_id>", methods=["PUT"])
 def update_wishlists(wishlist_id):
     """

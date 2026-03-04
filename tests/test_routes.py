@@ -364,6 +364,31 @@ class TestYourResourceService(TestCase):
         self.assertEqual(len(response.data), 0)
 
     # ----------------------------------------------------------
+    # TEST DELETE ITEM FROM WISHLIST
+    # ----------------------------------------------------------
+
+    def test_delete_item_from_wishlist(self):
+        """It should Delete an Item from a Wishlist"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        item = ItemFactory(wishlist_id=wishlist.id)
+        item.create()
+
+        # Verify item exists
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(len(response.get_json()), 1)
+
+        # Delete the item
+        response = self.client.delete(f"{BASE_URL}/{wishlist.id}/items/{item.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+        # Verify item is gone
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 0)
+
+    # ----------------------------------------------------------
     # TEST UPDATE WISHLIST
     # ----------------------------------------------------------
     def test_update_wishlist(self):
@@ -549,3 +574,41 @@ class TestSadPaths(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.get_json()
         self.assertIn("message", data)
+
+    # ----------------------------------------------------------
+    # TEST DELETE ITEM SAD PATHS
+    # ----------------------------------------------------------
+
+    def test_delete_item_wishlist_not_found(self):
+        """It should return 404 when deleting an item from a non-existent wishlist"""
+        response = self.client.delete(f"{BASE_URL}/999999/items/1")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_delete_item_not_found(self):
+        """It should return 404 when deleting a non-existent item"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        response = self.client.delete(f"{BASE_URL}/{wishlist.id}/items/999999")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_delete_item_not_in_wishlist(self):
+        """It should return 404 when deleting an item that belongs to another wishlist"""
+        wishlist_a = WishlistFactory()
+        wishlist_a.create()
+        wishlist_b = WishlistFactory()
+        wishlist_b.create()
+        item = ItemFactory(wishlist_id=wishlist_a.id)
+        item.create()
+
+        response = self.client.delete(f"{BASE_URL}/{wishlist_b.id}/items/{item.id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+        # Verify the item still exists in wishlist_a
+        response = self.client.get(f"{BASE_URL}/{wishlist_a.id}/items")
+        self.assertEqual(len(response.get_json()), 1)
