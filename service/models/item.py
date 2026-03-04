@@ -86,3 +86,16 @@ class Item(db.Model, PersistentBase):
             raise DataValidationError("Invalid Item: invalid datetime format") from error
 
         return self
+
+    @classmethod
+    def find_by_wishlist_product_variant(cls, wishlist_id, product_id, variant_id):
+        """Returns an Item matching the (wishlist_id, product_id, variant_id) combination"""
+        logger.info(
+            "Checking for duplicate: wishlist=%s product=%s variant=%s",
+            wishlist_id, product_id, variant_id,
+        )
+        return cls.query.filter(
+            cls.wishlist_id == wishlist_id,
+            cls.product_id == product_id,
+            cls.variant_id == variant_id,
+        ).first()

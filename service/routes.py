@@ -150,10 +150,22 @@ def create_wishlist_items(wishlist_id):
 
     check_content_type("application/json")
 
-    item = Item()
     data = request.get_json()
     data["wishlist_id"] = wishlist_id
     app.logger.info("Processing: %s", data)
+
+    # Check for duplicate (wishlist_id, product_id, variant_id)
+    existing = Item.find_by_wishlist_product_variant(
+        wishlist_id, data.get("product_id"), data.get("variant_id")
+    )
+    if existing:
+        abort(
+            status.HTTP_409_CONFLICT,
+            f"Item with product_id '{data.get('product_id')}' and "
+            f"variant_id '{data.get('variant_id')}' already exists in wishlist '{wishlist_id}'.",
+        )
+
+    item = Item()
     item.deserialize(data)
 
     item.create()
