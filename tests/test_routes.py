@@ -88,6 +88,23 @@ class TestYourResourceService(TestCase):
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
+    def test_index_returns_json_when_accept_json(self):
+        """It should return JSON when Accept is application/json"""
+        resp = self.client.get("/", headers={"Accept": "application/json"})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertIn("name", data)
+        self.assertIn("version", data)
+        self.assertIn("paths", data)
+        self.assertIn("endpoints", data)
+
+    def test_index_returns_html_when_accept_html(self):
+        """It should return HTML when Accept is text/html"""
+        resp = self.client.get("/", headers={"Accept": "text/html"})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("text/html", resp.headers.get("Content-Type", ""))
+        self.assertIn(b"Wishlist Service is Up", resp.data)
+
     # ----------------------------------------------------------
     # TEST LIST ALL WISHLISTS
     # ----------------------------------------------------------
@@ -487,6 +504,14 @@ class TestSadPaths(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
+
+    def test_method_not_allowed_returns_405(self):
+        """It should return 405 when using an unsupported HTTP method"""
+        response = self.client.patch(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        data = response.get_json()
+        self.assertIn("error", data)
+        self.assertEqual(data["error"], "Method not Allowed")
 
     def test_create_wishlist_no_data(self):
         """It should not Create a Wishlist with missing data"""

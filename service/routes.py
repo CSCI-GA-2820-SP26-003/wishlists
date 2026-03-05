@@ -46,11 +46,16 @@ def _index_json():
                 {"method": "DELETE", "path": "/wishlists/{wishlist_id}", "description": "Delete a wishlist"},
             ],
             "Wishlist Items": [
-                {"method": "GET", "path": "/wishlists/{wishlist_id}/items", "description": "List items in a wishlist"},
-                {"method": "POST", "path": "/wishlists/{wishlist_id}/items", "description": "Create an item in a wishlist"},
-                {"method": "GET", "path": "/wishlists/{wishlist_id}/items/{item_id}", "description": "Get one item in a wishlist"},
-                {"method": "PUT", "path": "/wishlists/{wishlist_id}/items/{item_id}", "description": "Update item in wishlist"},
-                {"method": "DELETE", "path": "/wishlists/{wishlist_id}/items/{item_id}", "description": "Delete item from wishlist"},
+                {"method": "GET", "path": "/wishlists/{wishlist_id}/items",
+                 "description": "List items in a wishlist"},
+                {"method": "POST", "path": "/wishlists/{wishlist_id}/items",
+                 "description": "Create an item in a wishlist"},
+                {"method": "GET", "path": "/wishlists/{wishlist_id}/items/{item_id}",
+                 "description": "Get one item in a wishlist"},
+                {"method": "PUT", "path": "/wishlists/{wishlist_id}/items/{item_id}",
+                 "description": "Update item in wishlist"},
+                {"method": "DELETE", "path": "/wishlists/{wishlist_id}/items/{item_id}",
+                 "description": "Delete item from wishlist"},
             ],
         },
     ), status.HTTP_200_OK
@@ -244,6 +249,7 @@ def update_wishlist_item(wishlist_id, item_id):
 
     app.logger.info("Item with id [%s] updated.", item.id)
     return jsonify(item.serialize()), status.HTTP_200_OK
+
 
 ######################################################################
 # CREATE A NEW WISHLIST
