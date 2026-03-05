@@ -4,6 +4,7 @@ HTML for the root landing page (GET /).
 
 
 def get_landing_html() -> str:
+    """Return HTML for the root landing page (GET /)."""
     return """<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Wishlist Service</title></head>

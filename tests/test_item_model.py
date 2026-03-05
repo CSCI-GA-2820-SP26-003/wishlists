@@ -141,3 +141,16 @@ class TestItem(TestCase):
         """It should not deserialize an Item with bad type"""
         item = Item()
         self.assertRaises(DataValidationError, item.deserialize, [])
+
+    def test_deserialize_item_invalid_datetime(self):
+        """It should not deserialize an Item with invalid datetime"""
+        item = Item()
+        data = {
+            "wishlist_id": 1,
+            "product_id": "SKU-1",
+            "product_name": "Test",
+            "quantity": 1,
+            "variant_id": "VAR-1",
+            "added_at": "not-a-valid-datetime",
+        }
+        self.assertRaises(DataValidationError, item.deserialize, data)

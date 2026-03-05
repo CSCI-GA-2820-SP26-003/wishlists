@@ -2,7 +2,7 @@
 Test Factory to make fake objects for testing
 """
 
-from datetime import datetime, timezone
+from datetime import timezone
 from factory import Factory, Sequence, Faker
 from service.models import Wishlist, Item
 

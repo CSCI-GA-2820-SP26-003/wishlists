@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ######################################################################
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-many-public-methods
 
 """
 Test cases for Wishlist Model
@@ -190,6 +190,17 @@ class TestWishlist(TestCase):
         """It should not deserialize a Wishlist with a TypeError"""
         wishlist = Wishlist()
         self.assertRaises(DataValidationError, wishlist.deserialize, [])
+
+    def test_deserialize_wishlist_invalid_datetime(self):
+        """It should not deserialize a Wishlist with invalid datetime"""
+        wishlist = Wishlist()
+        data = {
+            "name": "Test",
+            "customer_id": 1,
+            "description": "Test",
+            "created_at": "not-a-valid-datetime",
+        }
+        self.assertRaises(DataValidationError, wishlist.deserialize, data)
 
     def test_create_item_for_wishlist_relationship(self):
         """It should create an Item and load it through Wishlist.items"""
