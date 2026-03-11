@@ -1,54 +1,57 @@
-name: CI
+name: CI Build
 
 on:
   push:
     branches:
       - master
-      - main
   pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+    container: python:3.12-slim
 
     services:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_DB: testdb
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
+          POSTGRES_DB: postgres
         options: >-
-          --health-cmd="pg_isready -U postgres -d testdb"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    env:
-      DATABASE_URI: postgresql+psycopg://postgres:postgres@localhost:5432/testdb
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Check out source
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Install Python package dependencies
+        run: |
+          python -m pip install -U pip pipenv
+          pipenv install --system --dev
 
-      - name: Install Pipenv
-        run: python -m pip install --upgrade pip pipenv
-
-      - name: Install dependencies
-        run: pipenv install --dev
+      - name: Linting
+        run: |
+          flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
+          pylint service tests --max-line-length=127
 
       - name: Run tests with coverage
-        run: pipenv run make test
+        run: pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml --disable-warnings
+        env:
+          DATABASE_URI: postgresql+psycopg://postgres:postgres@postgres:5432/postgres
 
-      - name: Generate coverage report
-        run: pipenv run coverage xml
+      - name: Install packages for Codecov to work
+        run: apt-get update && apt-get install -y git curl gpg
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
