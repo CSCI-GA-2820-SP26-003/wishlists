@@ -40,10 +40,7 @@ jobs:
           pipenv install --system --dev
 
       - name: Linting
-        run: |
-          flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
-          pylint service tests --max-line-length=127
+        run: make lint
 
       - name: Run tests with coverage
         run: pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml --disable-warnings

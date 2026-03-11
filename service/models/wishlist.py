@@ -3,8 +3,13 @@ Wishlist data model
 """
 
 import logging
-from datetime import datetime, timezone
-from .persistent_base import db, PersistentBase, DataValidationError
+from .persistent_base import (
+    db,
+    PersistentBase,
+    DataValidationError,
+    parse_timestamp,
+    timestamp_column,
+)
 
 logger = logging.getLogger("flask.app")
 
@@ -18,17 +23,8 @@ class Wishlist(db.Model, PersistentBase):
     name = db.Column(db.String(63), nullable=False)
     customer_id = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(63), nullable=True)
-    created_at = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
-    updated_at = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
+    created_at = timestamp_column()
+    updated_at = timestamp_column()
 
     # one wishlist can contain many items
     items = db.relationship(
@@ -67,16 +63,8 @@ class Wishlist(db.Model, PersistentBase):
             self.description = data.get("description")
             created_at = data.get("created_at")
             updated_at = data.get("updated_at")
-            self.created_at = (
-                datetime.fromisoformat(created_at)
-                if created_at
-                else datetime.now(timezone.utc)
-            )
-            self.updated_at = (
-                datetime.fromisoformat(updated_at)
-                if updated_at
-                else datetime.now(timezone.utc)
-            )
+            self.created_at = parse_timestamp(created_at)
+            self.updated_at = parse_timestamp(updated_at)
         except AttributeError as error:
             raise DataValidationError("Invalid attribute: " + error.args[0]) from error
         except KeyError as error:
