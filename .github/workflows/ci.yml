@@ -39,6 +39,9 @@ jobs:
           python -m pip install -U pip pipenv
           pipenv install --system --dev
 
+      - name: Install system packages
+        run: apt-get update && apt-get install -y make git curl gpg
+
       - name: Linting
         run: make lint
 
@@ -46,9 +49,6 @@ jobs:
         run: pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml --disable-warnings
         env:
           DATABASE_URI: postgresql+psycopg://postgres:postgres@postgres:5432/postgres
-
-      - name: Install packages for Codecov to work
-        run: apt-get update && apt-get install -y git curl gpg
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
