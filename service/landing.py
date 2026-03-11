@@ -12,6 +12,11 @@ def get_landing_html() -> str:
   <h1>Wishlist Service is Up</h1>
   <p><strong>Wishlist REST API Service</strong> v1.0.</p>
   <p>These are the routes we serve:</p>
+  <h2>Service</h2>
+  <table border="1" cellpadding="8" cellspacing="0">
+    <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    <tr><td>GET</td><td>/health</td><td>Health check</td></tr>
+  </table>
   <h2>Wishlists</h2>
   <table border="1" cellpadding="8" cellspacing="0">
     <tr><th>Method</th><th>Path</th><th>Description</th></tr>
