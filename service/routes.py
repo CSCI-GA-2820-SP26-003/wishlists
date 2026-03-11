@@ -38,6 +38,9 @@ def _index_json():
         message="Wishlist service is up",
         paths=url_for("list_wishlists", _external=True),
         endpoints={
+            "Service": [
+                {"method": "GET", "path": "/health", "description": "Health check"},
+            ],
             "Wishlists": [
                 {
                     "method": "GET",
@@ -79,6 +82,12 @@ def index():
     if "application/json" in request.headers.get("Accept", ""):
         return _index_json()
     return _index_html()
+
+
+@app.route("/health", methods=["GET"])
+def healthcheck():
+    """Health endpoint for liveness and readiness probes"""
+    return jsonify({"status": "OK"}), status.HTTP_200_OK
 
 
 ######################################################################

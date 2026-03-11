@@ -105,6 +105,13 @@ class TestYourResourceService(TestCase):
         self.assertIn("text/html", resp.headers.get("Content-Type", ""))
         self.assertIn(b"Wishlist Service is Up", resp.data)
 
+    def test_health_endpoint(self):
+        """It should return healthy status"""
+        resp = self.client.get("/health")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("application/json", resp.headers.get("Content-Type", ""))
+        self.assertEqual(resp.get_json(), {"status": "OK"})
+
     # ----------------------------------------------------------
     # TEST LIST ALL WISHLISTS
     # ----------------------------------------------------------
