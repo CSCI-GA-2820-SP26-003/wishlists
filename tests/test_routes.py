@@ -145,6 +145,27 @@ class TestYourResourceService(TestCase):
         for wl in data:
             self.assertEqual(wl["name"], target.name)
 
+    def test_list_wishlists_by_description(self):
+        """It should List Wishlists filtered by description"""
+        WishlistFactory(description="Office setup").create()
+        WishlistFactory(description="Travel gear").create()
+        WishlistFactory(description="Office setup").create()
+
+        resp = self.client.get("/wishlists?description=Office setup")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 2)
+        for wl in data:
+            self.assertEqual(wl["description"], "Office setup")
+
+    def test_list_wishlists_by_description_no_results(self):
+        """It should return an empty list when description has no wishlists"""
+        self._create_wishlists(3)
+        resp = self.client.get("/wishlists?description=Does not exist")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 0)
+
     def test_list_all_wishlists_empty(self):
         """It should return an empty list when no Wishlists exist"""
         resp = self.client.get("/wishlists")
@@ -231,6 +252,37 @@ class TestYourResourceService(TestCase):
         wishlist.create()
 
         response = self.client.get(f"{BASE_URL}/{wishlist.id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data, [])
+
+    def test_list_items_in_wishlist_by_product_name(self):
+        """It should list Items in a Wishlist filtered by product_name"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        ItemFactory(wishlist_id=wishlist.id, product_name="Sneakers").create()
+        ItemFactory(wishlist_id=wishlist.id, product_name="Backpack").create()
+        ItemFactory(wishlist_id=wishlist.id, product_name="Sneakers").create()
+
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items?product_name=Sneakers")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 2)
+
+        for item in data:
+            self.assertEqual(item["wishlist_id"], wishlist.id)
+            self.assertEqual(item["product_name"], "Sneakers")
+
+    def test_list_items_in_wishlist_by_product_name_no_results(self):
+        """It should return an empty list when product_name has no matches"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        ItemFactory(wishlist_id=wishlist.id, product_name="Sneakers").create()
+        ItemFactory(wishlist_id=wishlist.id, product_name="Backpack").create()
+
+        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items?product_name=Watch")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(data, [])

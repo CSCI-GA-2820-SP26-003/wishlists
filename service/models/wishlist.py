@@ -105,3 +105,9 @@ class Wishlist(db.Model, PersistentBase):
         """Returns all Wishlists for the given customer_id"""
         logger.info("Processing customer_id query for %s ...", customer_id)
         return cls.query.filter(cls.customer_id == customer_id)
+
+    @classmethod
+    def find_by_description(cls, description):
+        """Returns all Wishlists with the given description"""
+        logger.info("Processing description query for %s ...", description)
+        return cls.query.filter(cls.description == description)

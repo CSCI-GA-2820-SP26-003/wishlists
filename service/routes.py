@@ -39,15 +39,22 @@ def _index_json():
         paths=url_for("list_wishlists", _external=True),
         endpoints={
             "Wishlists": [
-                {"method": "GET", "path": "/wishlists", "description": "List wishlists"},
+                {
+                    "method": "GET",
+                    "path": "/wishlists",
+                    "description": "List wishlists (supports ?customer_id=, ?name=, ?description=)",
+                },
                 {"method": "POST", "path": "/wishlists", "description": "Create a wishlist"},
                 {"method": "GET", "path": "/wishlists/{wishlist_id}", "description": "Get one wishlist"},
                 {"method": "PUT", "path": "/wishlists/{wishlist_id}", "description": "Update wishlist name/description"},
                 {"method": "DELETE", "path": "/wishlists/{wishlist_id}", "description": "Delete a wishlist"},
             ],
             "Wishlist Items": [
-                {"method": "GET", "path": "/wishlists/{wishlist_id}/items",
-                 "description": "List items in a wishlist"},
+                {
+                    "method": "GET",
+                    "path": "/wishlists/{wishlist_id}/items",
+                    "description": "List items in a wishlist (supports ?product_name=)",
+                },
                 {"method": "POST", "path": "/wishlists/{wishlist_id}/items",
                  "description": "Create an item in a wishlist"},
                 {"method": "GET", "path": "/wishlists/{wishlist_id}/items/{item_id}",
@@ -90,6 +97,7 @@ def list_wishlists():
     wishlists = []
     customer_id = request.args.get("customer_id")
     name = request.args.get("name")
+    description = request.args.get("description")
 
     if customer_id:
         app.logger.info("Filtering by customer_id: %s", customer_id)
@@ -101,6 +109,9 @@ def list_wishlists():
     elif name:
         app.logger.info("Filtering by name: %s", name)
         wishlists = Wishlist.find_by_name(name)
+    elif description:
+        app.logger.info("Filtering by description: %s", description)
+        wishlists = Wishlist.find_by_description(description)
     else:
         app.logger.info("Returning all wishlists")
         wishlists = Wishlist.all()
@@ -137,7 +148,14 @@ def list_wishlist_items(wishlist_id):
     if not wishlist:
         abort(status.HTTP_404_NOT_FOUND, f"Wishlist with id '{wishlist_id}' not found.")
 
-    results = [item.serialize() for item in wishlist.items]
+    product_name = request.args.get("product_name")
+    if product_name:
+        app.logger.info("Filtering items by product_name: %s", product_name)
+        items = Item.find_by_wishlist_id_and_product_name(wishlist_id, product_name)
+    else:
+        items = wishlist.items
+
+    results = [item.serialize() for item in items]
     return jsonify(results), status.HTTP_200_OK
 
 
