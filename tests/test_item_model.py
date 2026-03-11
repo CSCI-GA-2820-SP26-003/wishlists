@@ -154,3 +154,17 @@ class TestItem(TestCase):
             "added_at": "not-a-valid-datetime",
         }
         self.assertRaises(DataValidationError, item.deserialize, data)
+
+    def test_find_by_wishlist_id_and_product_name(self):
+        """It should find Items by wishlist_id and product_name"""
+        wishlist = WishlistFactory()
+        wishlist.create()
+
+        matching_item = ItemFactory(wishlist_id=wishlist.id, product_name="Sneakers")
+        matching_item.create()
+        ItemFactory(wishlist_id=wishlist.id, product_name="Backpack").create()
+
+        results = Item.find_by_wishlist_id_and_product_name(wishlist.id, "Sneakers")
+        self.assertEqual(results.count(), 1)
+        self.assertEqual(results[0].id, matching_item.id)
+        self.assertEqual(results[0].product_name, "Sneakers")

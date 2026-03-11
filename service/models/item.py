@@ -99,3 +99,16 @@ class Item(db.Model, PersistentBase):
             cls.product_id == product_id,
             cls.variant_id == variant_id,
         ).first()
+
+    @classmethod
+    def find_by_wishlist_id_and_product_name(cls, wishlist_id, product_name):
+        """Returns all items in a wishlist with the given product name"""
+        logger.info(
+            "Processing item query for wishlist=%s product_name=%s",
+            wishlist_id,
+            product_name,
+        )
+        return cls.query.filter(
+            cls.wishlist_id == wishlist_id,
+            cls.product_name == product_name,
+        )

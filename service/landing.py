@@ -15,7 +15,7 @@ def get_landing_html() -> str:
   <h2>Wishlists</h2>
   <table border="1" cellpadding="8" cellspacing="0">
     <tr><th>Method</th><th>Path</th><th>Description</th></tr>
-    <tr><td>GET</td><td>/wishlists</td><td>List wishlists</td></tr>
+    <tr><td>GET</td><td>/wishlists</td><td>List wishlists (supports ?customer_id=, ?name=, ?description=)</td></tr>
     <tr><td>POST</td><td>/wishlists</td><td>Create a wishlist</td></tr>
     <tr><td>GET</td><td>/wishlists/{wishlist_id}</td><td>Get one wishlist</td></tr>
     <tr><td>PUT</td><td>/wishlists/{wishlist_id}</td><td>Update wishlist name/description</td></tr>
@@ -24,7 +24,7 @@ def get_landing_html() -> str:
   <h2>Wishlist Items</h2>
   <table border="1" cellpadding="8" cellspacing="0">
     <tr><th>Method</th><th>Path</th><th>Description</th></tr>
-    <tr><td>GET</td><td>/wishlists/{wishlist_id}/items</td><td>List items in a wishlist</td></tr>
+    <tr><td>GET</td><td>/wishlists/{wishlist_id}/items</td><td>List items in a wishlist (supports ?product_name=)</td></tr>
     <tr><td>POST</td><td>/wishlists/{wishlist_id}/items</td><td>Create an item in a wishlist</td></tr>
     <tr><td>GET</td><td>/wishlists/{wishlist_id}/items/{item_id}</td><td>Get one item in a wishlist</td></tr>
     <tr><td>PUT</td><td>/wishlists/{wishlist_id}/items/{item_id}</td><td>Update item in wishlist</td></tr>
