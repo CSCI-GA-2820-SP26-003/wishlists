@@ -3,8 +3,13 @@ Item data model associated with a Wishlist
 """
 
 import logging
-from datetime import datetime, timezone
-from .persistent_base import db, PersistentBase, DataValidationError
+from .persistent_base import (
+    db,
+    PersistentBase,
+    DataValidationError,
+    parse_timestamp,
+    timestamp_column,
+)
 
 logger = logging.getLogger("flask.app")
 
@@ -22,17 +27,8 @@ class Item(db.Model, PersistentBase):
     product_name = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=1)
     variant_id = db.Column(db.String(64), nullable=False)
-    added_at = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
-    updated_at = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
+    added_at = timestamp_column()
+    updated_at = timestamp_column()
 
     def __repr__(self):
         return (
@@ -64,16 +60,8 @@ class Item(db.Model, PersistentBase):
 
             added_at = data.get("added_at")
             updated_at = data.get("updated_at")
-            self.added_at = (
-                datetime.fromisoformat(added_at)
-                if added_at
-                else datetime.now(timezone.utc)
-            )
-            self.updated_at = (
-                datetime.fromisoformat(updated_at)
-                if updated_at
-                else datetime.now(timezone.utc)
-            )
+            self.added_at = parse_timestamp(added_at)
+            self.updated_at = parse_timestamp(updated_at)
         except AttributeError as error:
             raise DataValidationError("Invalid attribute: " + error.args[0]) from error
         except KeyError as error:
