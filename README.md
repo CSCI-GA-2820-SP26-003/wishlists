@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
+[![codecov](https://codecov.io/gh/CSCI-GA-2820-SP26-003/wishlists/branch/master/graph/badge.svg)](https://codecov.io/gh/CSCI-GA-2820-SP26-003/wishlists)
 
 ## Overview
 This Wishlist service is a REST API for managing wishlists and wishlist items. This code is modeled after the sample-accounts code which can be found [sample-accounts](https://github.com/nyu-devops/sample-accounts).
