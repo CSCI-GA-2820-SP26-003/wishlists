@@ -20,6 +20,7 @@ Persistent Base class for database CRUD functions
 
 import logging
 from abc import abstractmethod
+from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 
 logger = logging.getLogger("flask.app")
@@ -29,6 +30,26 @@ db = SQLAlchemy()
 
 class DataValidationError(Exception):
     """Used for an data validation errors when deserializing"""
+
+
+def utcnow():
+    """Returns the current UTC datetime"""
+    return datetime.now(timezone.utc)
+
+
+def timestamp_column():
+    """Creates a standard timestamp column"""
+    return db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
+    )
+
+
+def parse_timestamp(value):
+    """Parses an ISO timestamp or returns the current UTC time"""
+    return datetime.fromisoformat(value) if value else utcnow()
 
 
 ######################################################################
