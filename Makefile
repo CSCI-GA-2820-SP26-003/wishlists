@@ -32,9 +32,11 @@ install: ## Install Python dependencies
 .PHONY: lint
 lint: ## Run the linter
 	$(info Running linting...)
-	-flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
-	-flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
-	-pylint service tests --max-line-length=127
+	@status=0; \
+	flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics || status=$$?; \
+	flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics || status=$$?; \
+	pylint service tests --max-line-length=127 || status=$$?; \
+	exit $$status
 
 .PHONY: test
 test: ## Run the unit tests
