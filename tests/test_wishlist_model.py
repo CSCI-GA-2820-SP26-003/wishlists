@@ -177,6 +177,8 @@ class TestWishlist(TestCase):
         self.assertEqual(serial["name"], wishlist.name)
         self.assertEqual(serial["customer_id"], wishlist.customer_id)
         self.assertEqual(serial["description"], wishlist.description)
+        self.assertIn("is_private", serial)
+        self.assertFalse(serial["is_private"])
         self.assertEqual(len(serial["items"]), 1)
 
     def test_deserialize_a_wishlist(self):
@@ -199,6 +201,17 @@ class TestWishlist(TestCase):
         """It should not deserialize a Wishlist with a TypeError"""
         wishlist = Wishlist()
         self.assertRaises(DataValidationError, wishlist.deserialize, [])
+
+    def test_deserialize_is_private_must_be_boolean(self):
+        """It should reject non-boolean is_private"""
+        wishlist = Wishlist()
+        data = {
+            "name": "Test",
+            "customer_id": 1,
+            "description": "Test",
+            "is_private": "yes",
+        }
+        self.assertRaises(DataValidationError, wishlist.deserialize, data)
 
     def test_deserialize_wishlist_invalid_datetime(self):
         """It should not deserialize a Wishlist with invalid datetime"""

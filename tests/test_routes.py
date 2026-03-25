@@ -472,6 +472,29 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_wishlist["name"], test_wishlist.name)
         self.assertEqual(new_wishlist["customer_id"], test_wishlist.customer_id)
         self.assertEqual(new_wishlist["description"], test_wishlist.description)
+        self.assertFalse(new_wishlist["is_private"])
+
+    # ----------------------------------------------------------
+    # TEST ACTION: SET WISHLIST PRIVATE
+    # ----------------------------------------------------------
+
+    def test_set_wishlist_private(self):
+        """It should set a wishlist to private via the action route"""
+        wishlist = self._create_wishlists(1)[0]
+        self.assertFalse(wishlist.is_private)
+
+        resp = self.client.post(f"{BASE_URL}/{wishlist.id}/private")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertTrue(data["is_private"])
+
+        again = Wishlist.find(wishlist.id)
+        self.assertTrue(again.is_private)
+
+    def test_set_wishlist_private_not_found(self):
+        """It should return 404 when setting privacy on a missing wishlist"""
+        resp = self.client.post(f"{BASE_URL}/999999/private")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     # ----------------------------------------------------------
     # TEST DELETE

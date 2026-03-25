@@ -19,6 +19,7 @@ class WishlistFactory(Factory):
     name = Faker("word")
     customer_id = Sequence(lambda n: n + 1000)
     description = Faker("sentence", nb_words=4)
+    is_private = False
     created_at = Faker("date_time", tzinfo=timezone.utc)
     updated_at = Faker("date_time", tzinfo=timezone.utc)
 
