@@ -1,6 +1,6 @@
 # These can be overidden with env vars.
 REGISTRY ?= cluster-registry:5000
-IMAGE_NAME ?= petshop
+IMAGE_NAME ?= wishlists
 IMAGE_TAG ?= 1.0
 IMAGE ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 PLATFORM ?= "linux/amd64,linux/arm64"
@@ -63,7 +63,7 @@ cluster: ## Create a K3D Kubernetes cluster with load balancer and registry
 .PHONY: cluster-rm
 cluster-rm: ## Remove a K3D Kubernetes cluster
 	$(info Removing Kubernetes cluster...)
-	k3d cluster delete nyu-devops
+	k3d cluster delete $(CLUSTER)
 
 .PHONY: deploy
 deploy: ## Deploy the service on local Kubernetes
@@ -90,8 +90,12 @@ build:	## Build the project container image for local platform
 
 .PHONY: push
 push:	## Push the image to the container registry
-	$(info Pushing $(IMAGE)...)
-	docker push $(IMAGE)
+# 	$(info Pushing $(IMAGE)...)
+# 	docker push $(IMAGE)
+	$(info Tagging $(IMAGE) as localhost:5000/$(IMAGE_NAME):$(IMAGE_TAG)...)
+	docker tag $(IMAGE) localhost:5000/$(IMAGE_NAME):$(IMAGE_TAG)
+	$(info Pushing localhost:5000/$(IMAGE_NAME):$(IMAGE_TAG)...)
+	docker push localhost:5000/$(IMAGE_NAME):$(IMAGE_TAG)
 
 .PHONY: buildx
 buildx:	## Build multi-platform image with buildx
