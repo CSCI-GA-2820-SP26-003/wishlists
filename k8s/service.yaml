@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wishlists
+  labels:
+    app: wishlists
+spec:
+  selector:
+    app: wishlists
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
