@@ -23,6 +23,7 @@ class Wishlist(db.Model, PersistentBase):
     name = db.Column(db.String(63), nullable=False)
     customer_id = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(63), nullable=True)
+    is_private = db.Column(db.Boolean, nullable=False, default=False)
     created_at = timestamp_column()
     updated_at = timestamp_column()
 
@@ -45,6 +46,7 @@ class Wishlist(db.Model, PersistentBase):
             "name": self.name,
             "customer_id": self.customer_id,
             "description": self.description,
+            "is_private": self.is_private,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "items": [item.serialize() for item in self.items],
@@ -61,6 +63,15 @@ class Wishlist(db.Model, PersistentBase):
             self.name = data["name"]
             self.customer_id = data["customer_id"]
             self.description = data.get("description")
+            if "is_private" in data:
+                raw_private = data["is_private"]
+                if not isinstance(raw_private, bool):
+                    raise DataValidationError(
+                        "Invalid Wishlist: is_private must be a boolean"
+                    )
+                self.is_private = raw_private
+            else:
+                self.is_private = False
             created_at = data.get("created_at")
             updated_at = data.get("updated_at")
             self.created_at = parse_timestamp(created_at)

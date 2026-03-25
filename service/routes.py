@@ -51,6 +51,11 @@ def _index_json():
                 {"method": "GET", "path": "/wishlists/{wishlist_id}", "description": "Get one wishlist"},
                 {"method": "PUT", "path": "/wishlists/{wishlist_id}", "description": "Update wishlist name/description"},
                 {"method": "DELETE", "path": "/wishlists/{wishlist_id}", "description": "Delete a wishlist"},
+                {
+                    "method": "POST",
+                    "path": "/wishlists/{wishlist_id}/private",
+                    "description": "Action: set wishlist privacy to private",
+                },
             ],
             "Wishlist Items": [
                 {
@@ -142,6 +147,24 @@ def get_wishlist(wishlist_id):
     if not wishlist:
         abort(status.HTTP_404_NOT_FOUND, f"Wishlist with id '{wishlist_id}' not found.")
 
+    return jsonify(wishlist.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+# ACTION: SET WISHLIST TO PRIVATE
+######################################################################
+@app.route("/wishlists/<int:wishlist_id>/private", methods=["POST"])
+def set_wishlist_private(wishlist_id):
+    """Action: mark a wishlist as private (not a generic CRUD update)."""
+    app.logger.info("Request to set wishlist id [%s] to private", wishlist_id)
+    wishlist = Wishlist.find(wishlist_id)
+    if not wishlist:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Wishlist with id '{wishlist_id}' not found.",
+        )
+    wishlist.is_private = True
+    wishlist.update()
     return jsonify(wishlist.serialize()), status.HTTP_200_OK
 
 
