@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wishlists
+  labels:
+    app: wishlists
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wishlists
+  template:
+    metadata:
+      labels:
+        app: wishlists
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:15-alpine
+          envFrom:
+            - secretRef:
+                name: wishlists-db
+          command:
+            - sh
+            - -c
+            - >
+              until pg_isready -h wishlists-db-0.wishlists-db -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB";
+              do
+                echo "waiting for postgres";
+                sleep 2;
+              done
+      containers:
+        - name: wishlists
+          image: cluster-registry:5000/wishlists:1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DATABASE_URI
+              value: postgresql+psycopg://postgres:postgres@wishlists-db-0.wishlists-db:5432/wishlists
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
