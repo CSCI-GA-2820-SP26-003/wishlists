@@ -25,7 +25,6 @@ from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
 from service.models import Wishlist, Item
 from service.common import status  # HTTP Status Codes
-from service.landing import get_landing_html
 
 
 ######################################################################
@@ -75,18 +74,13 @@ def _index_json():
         },
     ), status.HTTP_200_OK
 
-
-def _index_html():
-    return get_landing_html(), status.HTTP_200_OK, {"Content-Type": "text/html; charset=utf-8"}
-
-
 @app.route("/")
 def index():
     """Root URL response – HTML landing page or JSON for API clients"""
     app.logger.info("Request for Root URL")
     if "application/json" in request.headers.get("Accept", ""):
         return _index_json()
-    return _index_html()
+    return app.send_static_file("index.html")
 
 
 @app.route("/health", methods=["GET"])
