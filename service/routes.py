@@ -74,6 +74,7 @@ def _index_json():
         },
     ), status.HTTP_200_OK
 
+
 @app.route("/")
 def index():
     """Root URL response – HTML landing page or JSON for API clients"""
