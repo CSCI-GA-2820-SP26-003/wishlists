@@ -105,6 +105,15 @@ class TestYourResourceService(TestCase):
         self.assertIn("text/html", resp.headers.get("Content-Type", ""))
         self.assertIn(b"Wishlist Service is Up", resp.data)
 
+    def test_index_html_contains_wishlist_ui(self):
+        """It should return the wishlist UI for browser requests"""
+        resp = self.client.get("/", headers={"Accept": "text/html"})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn(b'id="wishlist_name"', resp.data)
+        self.assertIn(b'id="wishlist_customer_id"', resp.data)
+        self.assertIn(b'id="create-btn"', resp.data)
+        self.assertIn(b'id="search_results"', resp.data)
+
     def test_health_endpoint(self):
         """It should return healthy status"""
         resp = self.client.get("/health")

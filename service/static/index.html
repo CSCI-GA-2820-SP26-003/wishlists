@@ -1,11 +1,4 @@
-"""
-HTML for the root landing page (GET /).
-"""
-
-
-def get_landing_html() -> str:
-    """Return HTML for the root landing page (GET /)."""
-    return """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Wishlist Service</title></head>
 <body style="font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5;">
@@ -35,5 +28,45 @@ def get_landing_html() -> str:
     <tr><td>PUT</td><td>/wishlists/{wishlist_id}/items/{item_id}</td><td>Update item in wishlist</td></tr>
     <tr><td>DELETE</td><td>/wishlists/{wishlist_id}/items/{item_id}</td><td>Delete item from wishlist</td></tr>
   </table>
+  <h2>Create and Search Wishlists</h2>
+  <p>Status: <span id="flash_message"></span></p>
+  <form>
+    <p>
+      <label for="wishlist_id">Wishlist ID:</label><br>
+      <input type="text" id="wishlist_id" readonly>
+    </p>
+    <p>
+      <label for="wishlist_name">Name:</label><br>
+      <input type="text" id="wishlist_name">
+    </p>
+    <p>
+      <label for="wishlist_customer_id">Customer Id:</label><br>
+      <input type="number" id="wishlist_customer_id">
+    </p>
+    <p>
+      <label for="wishlist_description">Description:</label><br>
+      <textarea id="wishlist_description" rows="4" cols="60"></textarea>
+    </p>
+    <p>
+      <button type="button" id="create-btn">Create</button>
+      <button type="button" id="search-btn">Search</button>
+    </p>
+  </form>
+  <div id="search_results">
+    <table border="1" cellpadding="8" cellspacing="0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Customer Id</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody id="results_body">
+        <tr><td colspan="4">No wishlists loaded yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <script type="text/javascript" src="static/js/rest_api.js"></script>
 </body>
-</html>"""
+</html>
