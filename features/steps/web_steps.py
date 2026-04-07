@@ -19,7 +19,10 @@ def step_impl(context):
 @when('I set the "{element_name}" to "{text_string}"')
 def step_impl(context, element_name, text_string):
     """Fill in a text input or textarea."""
-    element_id = ID_PREFIX + element_name.lower().replace(" ", "_")
+    normalized_name = element_name.lower().replace(" ", "_")
+    element_id = ID_PREFIX + normalized_name
+    if normalized_name.startswith("wishlist_"):
+        element_id = normalized_name
     element = context.driver.find_element(By.ID, element_id)
     element.clear()
     element.send_keys(text_string)

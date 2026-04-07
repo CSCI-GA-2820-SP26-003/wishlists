@@ -84,6 +84,20 @@
         return parsed;
     }
 
+    function parseWishlistId(rawValue) {
+        const trimmed = rawValue.trim();
+        if (!trimmed) {
+            throw new Error("Wishlist ID is required");
+        }
+
+        const parsed = Number.parseInt(trimmed, 10);
+        if (Number.isNaN(parsed)) {
+            throw new Error("Wishlist ID must be an integer");
+        }
+
+        return parsed;
+    }
+
     function collectCreatePayload() {
         const name = getField("wishlist_name").value.trim();
         const description = getField("wishlist_description").value.trim();
@@ -158,6 +172,25 @@
         }
     }
 
+    async function retrieveWishlist() {
+        try {
+            const wishlistId = parseWishlistId(getField("wishlist_id").value);
+            const wishlist = await requestJson("/wishlists/" + wishlistId, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            updateFormData(wishlist);
+            renderResults([wishlist]);
+            flashMessage("Success");
+        } catch (error) {
+            flashMessage(error.message);
+        }
+    }
+
     getField("create-btn").addEventListener("click", createWishlist);
+    getField("retrieve-btn").addEventListener("click", retrieveWishlist);
     getField("search-btn").addEventListener("click", searchWishlists);
 })();
