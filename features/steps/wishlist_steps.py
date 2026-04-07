@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 HTTP_200_OK = 200
 HTTP_204_NO_CONTENT = 204
+HTTP_201_CREATED = 201
 WAIT_TIMEOUT = 30
 
 
@@ -47,6 +48,21 @@ def step_no_wishlists_exist(context):
             timeout=WAIT_TIMEOUT,
         )
         assert delete_resp.status_code == HTTP_204_NO_CONTENT
+
+
+def create_wishlist_via_api(context, name, customer_id, description):
+    payload = {
+        "name": name,
+        "customer_id": customer_id,
+        "description": description,
+    }
+    create_resp = requests.post(
+        f"{context.base_url}/wishlists",
+        json=payload,
+        timeout=WAIT_TIMEOUT,
+    )
+    assert create_resp.status_code == HTTP_201_CREATED
+    return create_resp.json()
 
 
 @given("a wishlist exists")
@@ -109,3 +125,49 @@ def step_see_correct_wishlist_information(context):
     assert context.driver.find_element(By.ID, "wishlist_customer_id").get_attribute(
         "value"
     ) == str(context.wishlist["customer_id"])
+
+
+@given("multiple wishlists exist")
+def step_multiple_wishlists_exist(context):
+    step_no_wishlists_exist(context)
+    first = create_wishlist_via_api(
+        context,
+        "Gaming Setup",
+        12345,
+        "PC and peripherals",
+    )
+    second = create_wishlist_via_api(
+        context,
+        "Travel Gear",
+        67890,
+        "Luggage and accessories",
+    )
+    context.wishlists = [first, second]
+
+
+@when("I search for wishlists")
+def step_search_for_wishlists(context):
+    context.driver.find_element(By.ID, "search-btn").click()
+
+
+@then("I should see all wishlists in the results")
+def step_see_all_wishlists_in_results(context):
+    expected_ids = {str(wishlist["id"]) for wishlist in context.wishlists}
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        lambda drv: all(
+            wishlist_id in drv.find_element(By.ID, "search_results").text
+            for wishlist_id in expected_ids
+        )
+    )
+    table_text = context.driver.find_element(By.ID, "search_results").text
+    for wishlist_id in expected_ids:
+        assert wishlist_id in table_text
+
+
+@then("I should see more than one wishlist in the results")
+def step_see_more_than_one_wishlist_in_results(context):
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        lambda drv: len(drv.find_elements(By.CSS_SELECTOR, "#results_body tr")) > 1
+    )
+    rows = context.driver.find_elements(By.CSS_SELECTOR, "#results_body tr")
+    assert len(rows) > 1

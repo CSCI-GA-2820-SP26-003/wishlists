@@ -27,3 +27,15 @@ Feature: Wishlist UI landing page
 		When I set the "wishlist id" to "0"
 		And I press the "Retrieve" button
 		Then I should see the message "Wishlist with id '0' not found."
+
+	Scenario: List all wishlists from the web UI
+		Given I am on the "Home Page"
+		And multiple wishlists exist
+		When I press the "Search" button
+		Then I should see all wishlists in the results
+
+	Scenario: List returns more than one wishlist in the results
+		Given I am on the "Home Page"
+		And multiple wishlists exist
+		When I search for wishlists
+		Then I should see more than one wishlist in the results
