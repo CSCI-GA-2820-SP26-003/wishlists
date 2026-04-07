@@ -112,6 +112,7 @@ class TestYourResourceService(TestCase):
         self.assertIn(b'id="wishlist_name"', resp.data)
         self.assertIn(b'id="wishlist_customer_id"', resp.data)
         self.assertIn(b'id="create-btn"', resp.data)
+        self.assertIn(b'id="retrieve-btn"', resp.data)
         self.assertIn(b'id="search_results"', resp.data)
 
     def test_health_endpoint(self):
@@ -281,7 +282,9 @@ class TestYourResourceService(TestCase):
         ItemFactory(wishlist_id=wishlist.id, product_name="Backpack").create()
         ItemFactory(wishlist_id=wishlist.id, product_name="Sneakers").create()
 
-        response = self.client.get(f"{BASE_URL}/{wishlist.id}/items?product_name=Sneakers")
+        response = self.client.get(
+            f"{BASE_URL}/{wishlist.id}/items?product_name=Sneakers"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(len(data), 2)
