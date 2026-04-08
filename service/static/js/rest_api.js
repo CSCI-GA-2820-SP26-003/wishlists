@@ -190,7 +190,26 @@
         }
     }
 
+    async function deleteWishlist() {
+        try {
+            const wishlistId = parseWishlistId(getField("wishlist_id").value);
+            await requestJson("/wishlists/" + wishlistId, {
+                method: "DELETE",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            renderResults([]);
+            updateFormData({});
+            flashMessage("Success");
+        } catch (error) {
+            flashMessage(error.message);
+        }
+    }
+
     getField("create-btn").addEventListener("click", createWishlist);
     getField("retrieve-btn").addEventListener("click", retrieveWishlist);
+    getField("delete-btn").addEventListener("click", deleteWishlist);
     getField("search-btn").addEventListener("click", searchWishlists);
 })();

@@ -127,6 +127,41 @@ def step_see_correct_wishlist_information(context):
     ) == str(context.wishlist["customer_id"])
 
 
+@when("I delete the wishlist by ID")
+def step_delete_wishlist_by_id(context):
+    """Enter the wishlist id and click Delete in the UI."""
+    wishlist_id = str(context.wishlist["id"])
+    id_input = context.driver.find_element(By.ID, "wishlist_id")
+    id_input.clear()
+    id_input.send_keys(wishlist_id)
+    context.driver.find_element(By.ID, "delete-btn").click()
+
+
+@then("I should not see the deleted wishlist in the results")
+def step_deleted_wishlist_not_in_results(context):
+    """Search by customer and confirm the deleted wishlist id is absent."""
+    customer_input = context.driver.find_element(By.ID, "wishlist_customer_id")
+    customer_input.clear()
+    customer_input.send_keys(str(context.wishlist["customer_id"]))
+    context.driver.execute_script(
+        "document.getElementById('flash_message').textContent = '';"
+    )
+    context.driver.find_element(By.ID, "search-btn").click()
+
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element((By.ID, "flash_message"), "Success")
+    )
+    assert found
+    rows = context.driver.find_elements(By.CSS_SELECTOR, "#results_body tr")
+    returned_ids = []
+    for row in rows:
+        cells = row.find_elements(By.TAG_NAME, "td")
+        if len(cells) >= 1:
+            returned_ids.append(cells[0].text.strip())
+
+    assert str(context.wishlist["id"]) not in returned_ids
+
+
 @given("multiple wishlists exist")
 def step_multiple_wishlists_exist(context):
     step_no_wishlists_exist(context)
