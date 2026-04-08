@@ -51,3 +51,11 @@ Feature: Wishlist UI landing page
     And multiple wishlists exist
     When I search for wishlists
     Then I should see more than one wishlist in the results
+
+  Scenario: Query wishlists by name from the web UI
+    Given I am on the "Home Page"
+    And multiple wishlists exist
+    When I set the "wishlist_name" to "Gaming Setup"
+    And I press the "Search" button
+    Then I should see "Gaming Setup" in the results
+    And I should not see "Travel Gear" in the results

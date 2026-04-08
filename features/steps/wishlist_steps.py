@@ -206,3 +206,12 @@ def step_see_more_than_one_wishlist_in_results(context):
     )
     rows = context.driver.find_elements(By.CSS_SELECTOR, "#results_body tr")
     assert len(rows) > 1
+
+@then('I should not see "{text}" in the results')
+def step_should_not_see_in_results(context, text):
+    """Assert the results table does NOT contain the given text."""
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element((By.ID, "flash_message"), "Success")
+    )
+    table_text = context.driver.find_element(By.ID, "search_results").text
+    assert text not in table_text
