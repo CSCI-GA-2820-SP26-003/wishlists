@@ -112,6 +112,7 @@ class TestYourResourceService(TestCase):
         self.assertIn(b'id="wishlist_name"', resp.data)
         self.assertIn(b'id="wishlist_customer_id"', resp.data)
         self.assertIn(b'id="create-btn"', resp.data)
+        self.assertIn(b'id="update-btn"', resp.data)
         self.assertIn(b'id="retrieve-btn"', resp.data)
         self.assertIn(b'id="delete-btn"', resp.data)
         self.assertIn(b'id="search_results"', resp.data)

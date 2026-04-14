@@ -46,11 +46,21 @@
     }
 
     async function parseJsonResponse(response) {
+        if (response.status === 204 || response.status === 205) {
+            return null;
+        }
+
         const contentType = response.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) {
             return null;
         }
-        return response.json();
+
+        const responseText = await response.text();
+        if (!responseText.trim()) {
+            return null;
+        }
+
+        return JSON.parse(responseText);
     }
 
     async function requestJson(url, options) {
@@ -111,6 +121,20 @@
             name: name,
             customer_id: customerId,
             description: description || null
+        };
+    }
+
+    function collectUpdatePayload() {
+        const name = getField("wishlist_name").value.trim();
+        const description = getField("wishlist_description").value.trim();
+
+        if (!name) {
+            throw new Error("Name is required");
+        }
+
+        return {
+            name: name,
+            description: description
         };
     }
 
@@ -190,6 +214,26 @@
         }
     }
 
+    async function updateWishlist() {
+        try {
+            const wishlistId = parseWishlistId(getField("wishlist_id").value);
+            const wishlist = await requestJson("/wishlists/" + wishlistId, {
+                method: "PUT",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(collectUpdatePayload())
+            });
+
+            updateFormData(wishlist);
+            renderResults([wishlist]);
+            flashMessage("Success");
+        } catch (error) {
+            flashMessage(error.message);
+        }
+    }
+
     async function deleteWishlist() {
         try {
             const wishlistId = parseWishlistId(getField("wishlist_id").value);
@@ -209,6 +253,7 @@
     }
 
     getField("create-btn").addEventListener("click", createWishlist);
+    getField("update-btn").addEventListener("click", updateWishlist);
     getField("retrieve-btn").addEventListener("click", retrieveWishlist);
     getField("delete-btn").addEventListener("click", deleteWishlist);
     getField("search-btn").addEventListener("click", searchWishlists);

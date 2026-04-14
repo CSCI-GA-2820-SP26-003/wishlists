@@ -34,6 +34,24 @@ Feature: Wishlist UI landing page
     When I delete the wishlist by ID
     Then I should see the message "Success"
 
+  Scenario: Update a wishlist name from the web UI
+    Given I am on the "Home Page"
+    And a wishlist exists
+    When I retrieve the wishlist by ID
+    And I set the "wishlist name" to "Outdoor Essentials"
+    And I press the "Update" button
+    Then I should see the message "Success"
+    And the wishlist name should be updated to "Outdoor Essentials"
+
+  Scenario: Update a wishlist description from the web UI
+    Given I am on the "Home Page"
+    And a wishlist exists
+    When I retrieve the wishlist by ID
+    And I set the "wishlist description" to "Updated wishlist description"
+    And I press the "Update" button
+    Then I should see the message "Success"
+    And the wishlist description should be updated to "Updated wishlist description"
+
   Scenario: Deleted wishlist no longer appears in results
     Given I am on the "Home Page"
     And a wishlist exists
