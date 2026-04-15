@@ -207,6 +207,7 @@ def step_see_more_than_one_wishlist_in_results(context):
     rows = context.driver.find_elements(By.CSS_SELECTOR, "#results_body tr")
     assert len(rows) > 1
 
+
 @then('I should not see "{text}" in the results')
 def step_should_not_see_in_results(context, text):
     """Assert the results table does NOT contain the given text."""
@@ -215,3 +216,45 @@ def step_should_not_see_in_results(context, text):
     )
     table_text = context.driver.find_element(By.ID, "search_results").text
     assert text not in table_text
+
+
+@then('the wishlist name should be updated to "{name}"')
+def step_wishlist_name_updated(context, name):
+    """Verify the updated wishlist name is shown in the UI and persisted."""
+    assert (
+        context.driver.find_element(By.ID, "wishlist_name").get_attribute("value")
+        == name
+    )
+    table_text = context.driver.find_element(By.ID, "search_results").text
+    assert name in table_text
+
+    response = requests.get(
+        f"{context.base_url}/wishlists/{context.wishlist['id']}",
+        timeout=WAIT_TIMEOUT,
+    )
+    assert response.status_code == HTTP_200_OK
+    updated_wishlist = response.json()
+    assert updated_wishlist["name"] == name
+    context.wishlist["name"] = name
+
+
+@then('the wishlist description should be updated to "{description}"')
+def step_wishlist_description_updated(context, description):
+    """Verify the updated wishlist description is shown in the UI and persisted."""
+    assert (
+        context.driver.find_element(By.ID, "wishlist_description").get_attribute(
+            "value"
+        )
+        == description
+    )
+    table_text = context.driver.find_element(By.ID, "search_results").text
+    assert description in table_text
+
+    response = requests.get(
+        f"{context.base_url}/wishlists/{context.wishlist['id']}",
+        timeout=WAIT_TIMEOUT,
+    )
+    assert response.status_code == HTTP_200_OK
+    updated_wishlist = response.json()
+    assert updated_wishlist["description"] == description
+    context.wishlist["description"] = description
