@@ -1,4 +1,6 @@
 (function () {
+    const API_BASE_URL = "/api/wishlists";
+
     function getField(id) {
         return document.getElementById(id);
     }
@@ -160,7 +162,7 @@
 
     async function createWishlist() {
         try {
-            const wishlist = await requestJson("/wishlists", {
+            const wishlist = await requestJson(API_BASE_URL, {
                 method: "POST",
                 headers: {
                     "Accept": "application/json",
@@ -179,7 +181,7 @@
 
     async function searchWishlists() {
         try {
-            const wishlists = await requestJson("/wishlists" + buildSearchQuery(), {
+            const wishlists = await requestJson(API_BASE_URL + buildSearchQuery(), {
                 method: "GET",
                 headers: {
                     "Accept": "application/json"
@@ -199,7 +201,7 @@
     async function retrieveWishlist() {
         try {
             const wishlistId = parseWishlistId(getField("wishlist_id").value);
-            const wishlist = await requestJson("/wishlists/" + wishlistId, {
+            const wishlist = await requestJson(API_BASE_URL + "/" + wishlistId, {
                 method: "GET",
                 headers: {
                     "Accept": "application/json"
@@ -217,7 +219,7 @@
     async function updateWishlist() {
         try {
             const wishlistId = parseWishlistId(getField("wishlist_id").value);
-            const wishlist = await requestJson("/wishlists/" + wishlistId, {
+            const wishlist = await requestJson(API_BASE_URL + "/" + wishlistId, {
                 method: "PUT",
                 headers: {
                     "Accept": "application/json",
@@ -237,7 +239,7 @@
     async function deleteWishlist() {
         try {
             const wishlistId = parseWishlistId(getField("wishlist_id").value);
-            await requestJson("/wishlists/" + wishlistId, {
+            await requestJson(API_BASE_URL + "/" + wishlistId, {
                 method: "DELETE",
                 headers: {
                     "Accept": "application/json"

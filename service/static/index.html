@@ -4,29 +4,32 @@
 <body style="font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5;">
   <h1>Wishlist Service is Up</h1>
   <p><strong>Wishlist REST API Service</strong> v1.0.</p>
+  <p>Swagger documentation is available at <a href="/apidocs/">/apidocs/</a>.</p>
   <p>These are the routes we serve:</p>
   <h2>Service</h2>
   <table border="1" cellpadding="8" cellspacing="0">
     <tr><th>Method</th><th>Path</th><th>Description</th></tr>
-    <tr><td>GET</td><td>/health</td><td>Health check</td></tr>
+    <tr><td>GET</td><td>/api/health</td><td>Health check</td></tr>
+    <tr><td>GET</td><td>/apidocs/</td><td>Swagger UI</td></tr>
   </table>
   <h2>Wishlists</h2>
   <table border="1" cellpadding="8" cellspacing="0">
     <tr><th>Method</th><th>Path</th><th>Description</th></tr>
-    <tr><td>GET</td><td>/wishlists</td><td>List wishlists (supports ?customer_id=, ?name=, ?description=)</td></tr>
-    <tr><td>POST</td><td>/wishlists</td><td>Create a wishlist</td></tr>
-    <tr><td>GET</td><td>/wishlists/{wishlist_id}</td><td>Get one wishlist</td></tr>
-    <tr><td>PUT</td><td>/wishlists/{wishlist_id}</td><td>Update wishlist name/description</td></tr>
-    <tr><td>DELETE</td><td>/wishlists/{wishlist_id}</td><td>Delete a wishlist</td></tr>
+    <tr><td>GET</td><td>/api/wishlists</td><td>List wishlists (supports ?customer_id=, ?name=, ?description=)</td></tr>
+    <tr><td>POST</td><td>/api/wishlists</td><td>Create a wishlist</td></tr>
+    <tr><td>GET</td><td>/api/wishlists/{wishlist_id}</td><td>Get one wishlist</td></tr>
+    <tr><td>PUT</td><td>/api/wishlists/{wishlist_id}</td><td>Update wishlist name/description</td></tr>
+    <tr><td>DELETE</td><td>/api/wishlists/{wishlist_id}</td><td>Delete a wishlist</td></tr>
+    <tr><td>POST</td><td>/api/wishlists/{wishlist_id}/private</td><td>Set a wishlist to private</td></tr>
   </table>
   <h2>Wishlist Items</h2>
   <table border="1" cellpadding="8" cellspacing="0">
     <tr><th>Method</th><th>Path</th><th>Description</th></tr>
-    <tr><td>GET</td><td>/wishlists/{wishlist_id}/items</td><td>List items in a wishlist (supports ?product_name=)</td></tr>
-    <tr><td>POST</td><td>/wishlists/{wishlist_id}/items</td><td>Create an item in a wishlist</td></tr>
-    <tr><td>GET</td><td>/wishlists/{wishlist_id}/items/{item_id}</td><td>Get one item in a wishlist</td></tr>
-    <tr><td>PUT</td><td>/wishlists/{wishlist_id}/items/{item_id}</td><td>Update item in wishlist</td></tr>
-    <tr><td>DELETE</td><td>/wishlists/{wishlist_id}/items/{item_id}</td><td>Delete item from wishlist</td></tr>
+    <tr><td>GET</td><td>/api/wishlists/{wishlist_id}/items</td><td>List items in a wishlist (supports ?product_name=)</td></tr>
+    <tr><td>POST</td><td>/api/wishlists/{wishlist_id}/items</td><td>Create an item in a wishlist</td></tr>
+    <tr><td>GET</td><td>/api/wishlists/{wishlist_id}/items/{item_id}</td><td>Get one item in a wishlist</td></tr>
+    <tr><td>PUT</td><td>/api/wishlists/{wishlist_id}/items/{item_id}</td><td>Update item in wishlist</td></tr>
+    <tr><td>DELETE</td><td>/api/wishlists/{wishlist_id}/items/{item_id}</td><td>Delete item from wishlist</td></tr>
   </table>
   <h2>Create, Retrieve, Update, Delete, and Search Wishlists</h2>
   <p>Status: <span id="flash_message"></span></p>
