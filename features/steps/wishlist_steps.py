@@ -92,6 +92,47 @@ def step_wishlist_exists(context):
     }
 
 
+@when("I create a wishlist with valid details")
+def step_create_wishlist_with_valid_details(context):
+    """Create a wishlist using the browser UI and capture the created record."""
+    context.driver.find_element(By.ID, "wishlist_name").clear()
+    context.driver.find_element(By.ID, "wishlist_name").send_keys("Gaming Setup")
+    context.driver.find_element(By.ID, "wishlist_customer_id").clear()
+    context.driver.find_element(By.ID, "wishlist_customer_id").send_keys("12345")
+    context.driver.find_element(By.ID, "wishlist_description").clear()
+    context.driver.find_element(By.ID, "wishlist_description").send_keys(
+        "PC and peripherals"
+    )
+    context.driver.find_element(By.ID, "create-btn").click()
+
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element((By.ID, "flash_message"), "Success")
+    )
+    context.created_wishlist = {
+        "id": context.driver.find_element(By.ID, "wishlist_id").get_attribute("value"),
+        "name": context.driver.find_element(By.ID, "wishlist_name").get_attribute("value"),
+        "customer_id": context.driver.find_element(By.ID, "wishlist_customer_id").get_attribute(
+            "value"
+        ),
+        "description": context.driver.find_element(
+            By.ID, "wishlist_description"
+        ).get_attribute("value"),
+    }
+
+
+@when('I press the "Create" button without entering a wishlist name')
+def step_create_without_name(context):
+    """Try creating from UI with missing name to trigger validation."""
+    context.driver.find_element(By.ID, "wishlist_name").clear()
+    context.driver.find_element(By.ID, "wishlist_customer_id").clear()
+    context.driver.find_element(By.ID, "wishlist_customer_id").send_keys("12345")
+    context.driver.find_element(By.ID, "wishlist_description").clear()
+    context.driver.find_element(By.ID, "wishlist_description").send_keys(
+        "PC and peripherals"
+    )
+    context.driver.find_element(By.ID, "create-btn").click()
+
+
 @when("I retrieve the wishlist by ID")
 def step_retrieve_wishlist_by_id(context):
     """Enter the wishlist id and click Retrieve in the UI."""
@@ -150,6 +191,48 @@ def step_see_correct_wishlist_information(context):
     assert context.driver.find_element(By.ID, "wishlist_customer_id").get_attribute(
         "value"
     ) == str(context.wishlist["customer_id"])
+
+
+@then("I should see the newly created wishlist details")
+def step_see_newly_created_wishlist_details(context):
+    """Validate created wishlist is visible in form fields and results."""
+    assert context.driver.find_element(By.ID, "wishlist_id").get_attribute(
+        "value"
+    ) != ""
+    assert (
+        context.driver.find_element(By.ID, "wishlist_name").get_attribute("value")
+        == "Gaming Setup"
+    )
+    assert context.driver.find_element(By.ID, "wishlist_customer_id").get_attribute(
+        "value"
+    ) == "12345"
+    assert (
+        context.driver.find_element(By.ID, "wishlist_description").get_attribute("value")
+        == "PC and peripherals"
+    )
+    table_text = context.driver.find_element(By.ID, "search_results").text
+    assert "Gaming Setup" in table_text
+    assert "12345" in table_text
+
+
+@then("I should see the new wishlist in the results")
+def step_see_new_wishlist_in_results(context):
+    """Validate search results include the wishlist created in this scenario."""
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element((By.ID, "flash_message"), "Success")
+    )
+    table_text = context.driver.find_element(By.ID, "search_results").text
+    assert context.created_wishlist["name"] in table_text
+    assert context.created_wishlist["customer_id"] in table_text
+
+
+@then("I should see an error message indicating the name is required")
+def step_name_required_error(context):
+    """Ensure UI validation message appears for missing name on create."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element((By.ID, "flash_message"), "Name is required")
+    )
+    assert found
 
 
 @then("the wishlist should show a private status")

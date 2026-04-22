@@ -9,6 +9,26 @@ Feature: Wishlist UI landing page
     Then I should see "Wishlist Service is Up"
     And I should see "These are the routes we serve"
 
+  Scenario: Create a wishlist from the web UI
+    Given I am on the "Home Page"
+    When I set the "wishlist name" to "Gaming Setup"
+    And I set the "customer id" to "12345"
+    And I set the "wishlist description" to "PC and peripherals"
+    And I press the "Create" button
+    Then I should see the message "Success"
+    And I should see the newly created wishlist details
+
+  Scenario: Create then search for the new wishlist
+    Given I am on the "Home Page"
+    When I create a wishlist with valid details
+    And I press the "Search" button
+    Then I should see the new wishlist in the results
+
+  Scenario: Create requires a wishlist name
+    Given I am on the "Home Page"
+    When I press the "Create" button without entering a wishlist name
+    Then I should see an error message indicating the name is required
+
   Scenario: Retrieve a wishlist by ID from the web UI
     Given I am on the "Home Page"
     And a wishlist exists
