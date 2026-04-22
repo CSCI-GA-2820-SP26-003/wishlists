@@ -30,7 +30,9 @@ from tests.factories import WishlistFactory, ItemFactory
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
-BASE_URL = "/wishlists"
+BASE_URL = "/api/wishlists"
+HEALTH_URL = "/api/health"
+DOCS_URL = "/apidocs/"
 
 
 ######################################################################
@@ -96,6 +98,8 @@ class TestYourResourceService(TestCase):
         self.assertIn("name", data)
         self.assertIn("version", data)
         self.assertIn("paths", data)
+        self.assertIn("/api/wishlists", data["paths"])
+        self.assertIn("/apidocs/", data["docs"])
         self.assertIn("endpoints", data)
 
     def test_index_returns_html_when_accept_html(self):
@@ -104,6 +108,7 @@ class TestYourResourceService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("text/html", resp.headers.get("Content-Type", ""))
         self.assertIn(b"Wishlist Service is Up", resp.data)
+        self.assertIn(b"/apidocs/", resp.data)
 
     def test_index_html_contains_wishlist_ui(self):
         """It should return the wishlist UI for browser requests"""
@@ -118,11 +123,18 @@ class TestYourResourceService(TestCase):
         self.assertIn(b'id="search_results"', resp.data)
 
     def test_health_endpoint(self):
-        """It should return healthy status"""
-        resp = self.client.get("/health")
+        """It should return healthy status from the API prefix"""
+        resp = self.client.get(HEALTH_URL)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("application/json", resp.headers.get("Content-Type", ""))
         self.assertEqual(resp.get_json(), {"status": "OK"})
+
+    def test_swagger_docs_endpoint(self):
+        """It should serve the Swagger UI"""
+        resp = self.client.get(DOCS_URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("text/html", resp.headers.get("Content-Type", ""))
+        self.assertIn(b"swagger-ui", resp.data.lower())
 
     # ----------------------------------------------------------
     # TEST LIST ALL WISHLISTS
@@ -131,7 +143,7 @@ class TestYourResourceService(TestCase):
     def test_list_all_wishlists(self):
         """It should List all Wishlists"""
         self._create_wishlists(5)
-        resp = self.client.get("/wishlists")
+        resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(len(data), 5)
@@ -140,7 +152,7 @@ class TestYourResourceService(TestCase):
         """It should List Wishlists filtered by customer_id"""
         wishlists = self._create_wishlists(3)
         target = wishlists[0]
-        resp = self.client.get(f"/wishlists?customer_id={target.customer_id}")
+        resp = self.client.get(f"{BASE_URL}?customer_id={target.customer_id}")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         for wl in data:
@@ -149,7 +161,7 @@ class TestYourResourceService(TestCase):
     def test_list_wishlists_by_customer_id_no_results(self):
         """It should return an empty list when customer_id has no wishlists"""
         self._create_wishlists(3)
-        resp = self.client.get("/wishlists?customer_id=0")
+        resp = self.client.get(f"{BASE_URL}?customer_id=0")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(len(data), 0)
@@ -158,7 +170,7 @@ class TestYourResourceService(TestCase):
         """It should List Wishlists filtered by name"""
         wishlists = self._create_wishlists(3)
         target = wishlists[0]
-        resp = self.client.get(f"/wishlists?name={target.name}")
+        resp = self.client.get(f"{BASE_URL}?name={target.name}")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         for wl in data:
@@ -170,7 +182,7 @@ class TestYourResourceService(TestCase):
         WishlistFactory(description="Travel gear").create()
         WishlistFactory(description="Office setup").create()
 
-        resp = self.client.get("/wishlists?description=Office setup")
+        resp = self.client.get(f"{BASE_URL}?description=Office setup")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(len(data), 2)
@@ -180,21 +192,21 @@ class TestYourResourceService(TestCase):
     def test_list_wishlists_by_description_no_results(self):
         """It should return an empty list when description has no wishlists"""
         self._create_wishlists(3)
-        resp = self.client.get("/wishlists?description=Does not exist")
+        resp = self.client.get(f"{BASE_URL}?description=Does not exist")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(len(data), 0)
 
     def test_list_all_wishlists_empty(self):
         """It should return an empty list when no Wishlists exist"""
-        resp = self.client.get("/wishlists")
+        resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(len(data), 0)
 
     def test_list_wishlists_bad_customer_id(self):
         """It should return 400 when customer_id is not a valid integer"""
-        resp = self.client.get("/wishlists?customer_id=abc")
+        resp = self.client.get(f"{BASE_URL}?customer_id=abc")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     # ----------------------------------------------------------
@@ -608,6 +620,22 @@ class TestSadPaths(TestCase):
         data = response.get_json()
         self.assertIn("error", data)
         self.assertEqual(data["error"], "Method not Allowed")
+
+    def test_root_method_not_allowed_returns_json_405(self):
+        """It should return JSON for unsupported methods on non-API routes"""
+        response = self.client.patch("/")
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        data = response.get_json()
+        self.assertIn("error", data)
+        self.assertEqual(data["error"], "Method not Allowed")
+
+    def test_missing_route_returns_json_404(self):
+        """It should return JSON for missing non-API routes"""
+        response = self.client.get("/does-not-exist")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("error", data)
+        self.assertEqual(data["error"], "Not Found")
 
     def test_create_wishlist_no_data(self):
         """It should not Create a Wishlist with missing data"""

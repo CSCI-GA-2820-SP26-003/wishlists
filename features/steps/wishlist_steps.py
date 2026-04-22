@@ -10,6 +10,7 @@ HTTP_200_OK = 200
 HTTP_204_NO_CONTENT = 204
 HTTP_201_CREATED = 201
 WAIT_TIMEOUT = 30
+API_BASE_PATH = "/api/wishlists"
 
 
 @given("the Wishlist service is running")
@@ -38,7 +39,7 @@ def step_should_see_text(context, text):
 @given("no wishlists exist")
 def step_no_wishlists_exist(context):
     """Delete all wishlists so each scenario starts from a clean state."""
-    rest_endpoint = f"{context.base_url}/wishlists"
+    rest_endpoint = f"{context.base_url}{API_BASE_PATH}"
     context.resp = requests.get(rest_endpoint, timeout=WAIT_TIMEOUT)
     assert context.resp.status_code == HTTP_200_OK
 
@@ -57,7 +58,7 @@ def create_wishlist_via_api(context, name, customer_id, description):
         "description": description,
     }
     create_resp = requests.post(
-        f"{context.base_url}/wishlists",
+        f"{context.base_url}{API_BASE_PATH}",
         json=payload,
         timeout=WAIT_TIMEOUT,
     )
@@ -229,7 +230,7 @@ def step_wishlist_name_updated(context, name):
     assert name in table_text
 
     response = requests.get(
-        f"{context.base_url}/wishlists/{context.wishlist['id']}",
+        f"{context.base_url}{API_BASE_PATH}/{context.wishlist['id']}",
         timeout=WAIT_TIMEOUT,
     )
     assert response.status_code == HTTP_200_OK
@@ -251,7 +252,7 @@ def step_wishlist_description_updated(context, description):
     assert description in table_text
 
     response = requests.get(
-        f"{context.base_url}/wishlists/{context.wishlist['id']}",
+        f"{context.base_url}{API_BASE_PATH}/{context.wishlist['id']}",
         timeout=WAIT_TIMEOUT,
     )
     assert response.status_code == HTTP_200_OK
