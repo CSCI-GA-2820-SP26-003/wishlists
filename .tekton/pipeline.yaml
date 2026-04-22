@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: cd-pipeline
+spec:
+  params:
+    - description: The URL to the git repo
+      name: GIT_REPO
+      type: string
+    - default: master
+      description: The reference (branch or ref)
+      name: GIT_REF
+      type: string
+  tasks:
+    - name: git-clone
+      params:
+        - name: URL
+          value: $(params.GIT_REPO)
+        - name: REVISION
+          value: $(params.GIT_REF)
+        - name: DELETE_EXISTING
+          value: 'true'
+        - name: SSL_VERIFY
+          value: 'true'
+        - name: SUBMODULES
+          value: 'true'
+        - name: DEPTH
+          value: '1'
+        - name: VERBOSE
+          value: 'false'
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
+  workspaces:
+    - name: pipeline-workspace

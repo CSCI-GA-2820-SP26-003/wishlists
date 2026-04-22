@@ -7,5 +7,6 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 500Mi
+      storage: 1Gi
+  storageClassName: gp3
   volumeMode: Filesystem
