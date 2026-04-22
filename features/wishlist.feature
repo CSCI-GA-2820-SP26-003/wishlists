@@ -39,3 +39,29 @@ Feature: Wishlist UI landing page
 		And multiple wishlists exist
 		When I search for wishlists
 		Then I should see more than one wishlist in the results
+
+	Scenario: Make an existing wishlist private from the web UI
+		Given I am on the "Home Page"
+		And a wishlist exists
+		When I retrieve the wishlist by ID
+		And I press the "Make Private" button
+		Then I should see the message "Success"
+		And the wishlist should show a private status
+
+	Scenario: Retrieve wishlist after making it private
+		Given I am on the "Home Page"
+		And a wishlist exists
+		When I make the wishlist private from the web UI
+		And I retrieve that wishlist again
+		Then I should see that "is_private" is true
+
+	Scenario: Make Private without a valid wishlist ID
+		Given I am on the "Home Page"
+		When I press the "Make Private" button
+		Then I should see an error message indicating the wishlist ID is required or invalid
+
+	Scenario: Make Private for a wishlist that does not exist
+		Given I am on the "Home Page"
+		When I enter a wishlist ID that does not exist
+		And I press the "Make Private" button
+		Then I should see an error message indicating the wishlist was not found

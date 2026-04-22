@@ -101,6 +101,30 @@ def step_retrieve_wishlist_by_id(context):
     context.driver.find_element(By.ID, "retrieve-btn").click()
 
 
+@when("I retrieve that wishlist again")
+def step_retrieve_wishlist_again(context):
+    """Retrieve the current wishlist again by id."""
+    step_retrieve_wishlist_by_id(context)
+
+
+@when("I make the wishlist private from the web UI")
+def step_make_wishlist_private_from_ui(context):
+    """Click Make Private for the current wishlist id."""
+    wishlist_id = str(context.wishlist["id"])
+    id_input = context.driver.find_element(By.ID, "wishlist_id")
+    id_input.clear()
+    id_input.send_keys(wishlist_id)
+    context.driver.find_element(By.ID, "make_private-btn").click()
+
+
+@when("I enter a wishlist ID that does not exist")
+def step_enter_missing_wishlist_id(context):
+    """Enter a wishlist id that is not present in storage."""
+    id_input = context.driver.find_element(By.ID, "wishlist_id")
+    id_input.clear()
+    id_input.send_keys("999999")
+
+
 @then("I should see the wishlist details")
 def step_see_wishlist_details(context):
     """Ensure retrieval succeeded and details are shown in UI."""
@@ -125,6 +149,48 @@ def step_see_correct_wishlist_information(context):
     assert context.driver.find_element(By.ID, "wishlist_customer_id").get_attribute(
         "value"
     ) == str(context.wishlist["customer_id"])
+
+
+@then("the wishlist should show a private status")
+def step_wishlist_shows_private_status(context):
+    """Ensure the UI marks the wishlist as private."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element_value((By.ID, "wishlist_is_private"), "true")
+    )
+    assert found
+    table_text = context.driver.find_element(By.ID, "search_results").text
+    assert "Private" in table_text
+
+
+@then('I should see that "is_private" is true')
+def step_is_private_true(context):
+    """Assert private flag remains true after retrieval."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element_value((By.ID, "wishlist_is_private"), "true")
+    )
+    assert found
+
+
+@then("I should see an error message indicating the wishlist ID is required or invalid")
+def step_wishlist_id_required_or_invalid(context):
+    """Check UI validation for missing or invalid wishlist id."""
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        lambda drv: drv.find_element(By.ID, "flash_message").text.strip() != ""
+    )
+    message = context.driver.find_element(By.ID, "flash_message").text
+    assert (
+        "Wishlist ID is required" in message
+        or "Wishlist ID must be an integer" in message
+    )
+
+
+@then("I should see an error message indicating the wishlist was not found")
+def step_wishlist_not_found_error(context):
+    """Check UI error for missing wishlist id in backend."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        ec.text_to_be_present_in_element((By.ID, "flash_message"), "not found")
+    )
+    assert found
 
 
 @given("multiple wishlists exist")

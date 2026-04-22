@@ -111,8 +111,10 @@ class TestYourResourceService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn(b'id="wishlist_name"', resp.data)
         self.assertIn(b'id="wishlist_customer_id"', resp.data)
+        self.assertIn(b'id="wishlist_is_private"', resp.data)
         self.assertIn(b'id="create-btn"', resp.data)
         self.assertIn(b'id="retrieve-btn"', resp.data)
+        self.assertIn(b'id="make_private-btn"', resp.data)
         self.assertIn(b'id="search_results"', resp.data)
 
     def test_health_endpoint(self):

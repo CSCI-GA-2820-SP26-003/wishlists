@@ -18,6 +18,7 @@
     <tr><td>GET</td><td>/wishlists/{wishlist_id}</td><td>Get one wishlist</td></tr>
     <tr><td>PUT</td><td>/wishlists/{wishlist_id}</td><td>Update wishlist name/description</td></tr>
     <tr><td>DELETE</td><td>/wishlists/{wishlist_id}</td><td>Delete a wishlist</td></tr>
+    <tr><td>POST</td><td>/wishlists/{wishlist_id}/private</td><td>Action: set wishlist privacy to private</td></tr>
   </table>
   <h2>Wishlist Items</h2>
   <table border="1" cellpadding="8" cellspacing="0">
@@ -48,8 +49,13 @@
       <textarea id="wishlist_description" rows="4" cols="60"></textarea>
     </p>
     <p>
+      <label for="wishlist_is_private">Is Private:</label><br>
+      <input type="text" id="wishlist_is_private" readonly>
+    </p>
+    <p>
       <button type="button" id="create-btn">Create</button>
       <button type="button" id="retrieve-btn">Retrieve</button>
+      <button type="button" id="make_private-btn">Make Private</button>
       <button type="button" id="search-btn">Search</button>
     </p>
   </form>
@@ -60,11 +66,12 @@
           <th>ID</th>
           <th>Name</th>
           <th>Customer Id</th>
+          <th>Status</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody id="results_body">
-        <tr><td colspan="4">No wishlists loaded yet.</td></tr>
+        <tr><td colspan="5">No wishlists loaded yet.</td></tr>
       </tbody>
     </table>
   </div>
