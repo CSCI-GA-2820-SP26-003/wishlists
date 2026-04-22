@@ -31,7 +31,7 @@
     <tr><td>PUT</td><td>/api/wishlists/{wishlist_id}/items/{item_id}</td><td>Update item in wishlist</td></tr>
     <tr><td>DELETE</td><td>/api/wishlists/{wishlist_id}/items/{item_id}</td><td>Delete item from wishlist</td></tr>
   </table>
-  <h2>Create, Retrieve, Update, Delete, and Search Wishlists</h2>
+  <h2>Create, Retrieve, Update, Delete, Make Private, and Search Wishlists</h2>
   <p>Status: <span id="flash_message"></span></p>
   <form>
     <p>
@@ -51,9 +51,14 @@
       <textarea id="wishlist_description" rows="4" cols="60"></textarea>
     </p>
     <p>
+      <label for="wishlist_is_private">Is Private:</label><br>
+      <input type="text" id="wishlist_is_private" readonly>
+    </p>
+    <p>
       <button type="button" id="create-btn">Create</button>
       <button type="button" id="update-btn">Update</button>
       <button type="button" id="retrieve-btn">Retrieve</button>
+      <button type="button" id="make_private-btn">Make Private</button>
       <button type="button" id="delete-btn">Delete</button>
       <button type="button" id="search-btn">Search</button>
     </p>
@@ -65,11 +70,12 @@
           <th>ID</th>
           <th>Name</th>
           <th>Customer Id</th>
+          <th>Status</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody id="results_body">
-        <tr><td colspan="4">No wishlists loaded yet.</td></tr>
+        <tr><td colspan="5">No wishlists loaded yet.</td></tr>
       </tbody>
     </table>
   </div>

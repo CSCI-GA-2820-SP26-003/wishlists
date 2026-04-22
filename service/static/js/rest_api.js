@@ -14,6 +14,7 @@
         getField("wishlist_name").value = wishlist.name || "";
         getField("wishlist_customer_id").value = wishlist.customer_id || "";
         getField("wishlist_description").value = wishlist.description || "";
+        getField("wishlist_is_private").value = wishlist.is_private === true ? "true" : "false";
     }
 
     function createCell(row, value) {
@@ -30,7 +31,7 @@
             const row = document.createElement("tr");
             row.className = "empty-row";
             const cell = document.createElement("td");
-            cell.colSpan = 4;
+            cell.colSpan = 5;
             cell.textContent = "No wishlists found.";
             row.appendChild(cell);
             body.appendChild(row);
@@ -42,6 +43,7 @@
             createCell(row, wishlist.id);
             createCell(row, wishlist.name);
             createCell(row, wishlist.customer_id);
+            createCell(row, wishlist.is_private === true ? "Private" : "Public");
             createCell(row, wishlist.description || "");
             body.appendChild(row);
         });
@@ -100,6 +102,10 @@
         const trimmed = rawValue.trim();
         if (!trimmed) {
             throw new Error("Wishlist ID is required");
+        }
+
+        if (!/^\d+$/.test(trimmed)) {
+            throw new Error("Wishlist ID must be an integer");
         }
 
         const parsed = Number.parseInt(trimmed, 10);
@@ -236,6 +242,31 @@
         }
     }
 
+    async function makeWishlistPrivate() {
+        try {
+            const wishlistId = parseWishlistId(getField("wishlist_id").value);
+            await requestJson(API_BASE_URL + "/" + wishlistId + "/private", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            const wishlist = await requestJson(API_BASE_URL + "/" + wishlistId, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            updateFormData(wishlist);
+            renderResults([wishlist]);
+            flashMessage("Success");
+        } catch (error) {
+            flashMessage(error.message);
+        }
+    }
+
     async function deleteWishlist() {
         try {
             const wishlistId = parseWishlistId(getField("wishlist_id").value);
@@ -257,6 +288,7 @@
     getField("create-btn").addEventListener("click", createWishlist);
     getField("update-btn").addEventListener("click", updateWishlist);
     getField("retrieve-btn").addEventListener("click", retrieveWishlist);
+    getField("make_private-btn").addEventListener("click", makeWishlistPrivate);
     getField("delete-btn").addEventListener("click", deleteWishlist);
     getField("search-btn").addEventListener("click", searchWishlists);
 })();
