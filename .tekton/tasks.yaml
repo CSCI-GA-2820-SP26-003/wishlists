@@ -1,22 +1,7 @@
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: clone
-spec:
-  params:
-    - name: repo-url
-      type: string
-      description: The URL of the git repo to clone
-    - name: branch
-      type: string
-      description: The branch to clone
-      default: master
-  workspaces:
-    - name: output
-      description: The workspace to clone the repo into
-  steps:
-    - name: clone
-      image: alpine/git
-      script: |
-        git clone --branch $(params.branch) $(params.repo-url) $(workspaces.output.path)
-        echo "Cloned $(params.repo-url) branch $(params.branch)"
+# Custom Tekton tasks for the cd-pipeline.
+# Each team member should add their task here (lint, test, deploy, behave, etc.)
+# and apply it to the cluster with: oc apply -f .tekton/tasks.yaml
+#
+# Tasks using Tekton Hub (e.g., git-clone) are referenced via the cluster resolver
+# in pipeline.yaml and do not need to be defined here.
+
