@@ -1,0 +1,91 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: wishlist-cd-pipeline
+spec:
+  description: Wishlist CD Pipeline for building and deploying the service
+  params:
+    - name: repo-url
+      type: string
+      description: The URL of the git repository
+      default: https://github.com/CSCI-GA-2820-SP26-003/wishlists.git
+    - name: branch
+      type: string
+      description: The git branch to use
+      default: master
+    - name: image
+      type: string
+      description: Reference of the image to build
+      default: quay.io/rofrano/wishlist-service:latest
+  workspaces:
+    - name: shared-workspace
+      description: Shared workspace for pipeline execution
+  tasks:
+    - name: clone
+      taskRef:
+        name: clone
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
+        - name: branch
+          value: $(params.branch)
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: lint
+      taskRef:
+        name: pylint
+      runAfter:
+        - clone
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: test
+      taskRef:
+        name: test
+      runAfter:
+        - clone
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: build
+      taskRef:
+        name: buildah
+      runAfter:
+        - test
+        - lint
+      params:
+        - name: IMAGE
+          value: $(params.image)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: wishlist-cd-pipeline-run
+  generateName: wishlist-cd-pipeline-run-
+spec:
+  pipelineRef:
+    name: wishlist-cd-pipeline
+  params:
+    - name: repo-url
+      value: https://github.com/CSCI-GA-2820-SP26-003/wishlists.git
+    - name: branch
+      value: master
+    - name: image
+      value: quay.io/rofrano/wishlist-service:latest
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ "ReadWriteOnce" ]
+          resources:
+            requests:
+              storage: 1Gi
+  serviceAccountName: pipeline

@@ -20,3 +20,98 @@ spec:
       script: |
         git clone --branch $(params.branch) $(params.repo-url) $(workspaces.output.path)
         echo "Cloned $(params.repo-url) branch $(params.branch)"
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: pylint
+spec:
+  description: Run pylint linting checks on Python code
+  workspaces:
+    - name: source
+      description: Workspace containing the source code
+  steps:
+    - name: run-pylint
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        python -m pip install -U pip pipenv
+        pipenv install --system --dev
+        make lint
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: test
+spec:
+  description: Run unit tests with code coverage
+  workspaces:
+    - name: source
+      description: Workspace containing the source code
+  steps:
+    - name: run-tests
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        python -m pip install -U pip pipenv
+        pipenv install --system --dev
+        apt-get update && apt-get install -y postgresql-client
+        pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml --disable-warnings
+      env:
+        - name: DATABASE_URI
+          value: postgresql+psycopg://postgres:postgres@postgres:5432/postgres
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: buildah
+spec:
+  description: Build and push a container image using buildah
+  params:
+    - name: IMAGE
+      type: string
+      description: Reference of the image to build
+      default: quay.io/rofrano/wishlist-service:latest
+    - name: DOCKERFILE
+      type: string
+      description: Path to the Dockerfile
+      default: ./Dockerfile
+    - name: CONTEXT
+      type: string
+      description: Path to build context
+      default: .
+    - name: TLSVERIFY
+      type: string
+      description: Verify the TLS on the registry endpoint
+      default: "false"
+    - name: FORMAT
+      type: string
+      description: The format of the image (docker or oci)
+      default: docker
+  workspaces:
+    - name: source
+      description: Workspace containing the source code to build
+  steps:
+    - name: build
+      image: quay.io/buildah/stable:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        buildah bud \
+          --format=$(params.FORMAT) \
+          --tls-verify=$(params.TLSVERIFY) \
+          --layers \
+          -f $(params.DOCKERFILE) \
+          -t $(params.IMAGE) \
+          $(params.CONTEXT)
+      securityContext:
+        privileged: true
+    - name: push
+      image: quay.io/buildah/stable:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        buildah push \
+          --tls-verify=$(params.TLSVERIFY) \
+          $(params.IMAGE) \
+          docker://$(params.IMAGE)
+      securityContext:
+        privileged: true
