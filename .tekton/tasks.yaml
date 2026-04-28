@@ -1,7 +1,71 @@
-# Custom Tekton tasks for the cd-pipeline.
-# Each team member should add their task here (lint, test, deploy, behave, etc.)
-# and apply it to the cluster with: oc apply -f .tekton/tasks.yaml
-#
-# Tasks using Tekton Hub (e.g., git-clone) are referenced via the cluster resolver
-# in pipeline.yaml and do not need to be defined here.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: run-unit-tests
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Testing
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: python, pytest
+    tekton.dev/displayName: "pytest tests"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  description: >-
+    This task performs unit tests with pytest and detects Pipfile,
+    poetry.lock, or requirements.txt based projects.
+    It also sets DATABASE_URI so the tests can run without a live PostgreSQL service.
+  params:
+    - name: image
+      description: The container image used to run the tests.
+      type: string
+      default: quay.io/rofrano/nyu-devops-base:sp26
+    - name: pytest-args
+      description: The arguments to pass to the pytest CLI.
+      type: array
+      default: []
+    - name: database-uri
+      description: Database URI used during the test run.
+      type: string
+      default: sqlite:////tmp/wishlists-test.db
+  workspaces:
+    - name: source
+      description: The workspace with the source code.
+  steps:
+    - name: pytest
+      image: $(params.image)
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: DATABASE_URI
+          value: $(params.database-uri)
+        - name: PIPENV_VENV_IN_PROJECT
+          value: "1"
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+        export PATH="$PATH:$HOME/.local/bin"
 
+        echo "***** Installing dependencies *****"
+        if [ -e "poetry.lock" ]; then
+          echo "Found poetry.lock file: using poetry ..."
+          python -m pip install --user --upgrade pip poetry
+          poetry install
+        elif [ -e "Pipfile" ]; then
+          echo "Found Pipfile file: using pipenv ..."
+          python -m pip install --user --upgrade pip pipenv
+          python -m pipenv sync --dev
+        elif [ -e "requirements.txt" ]; then
+          python -m pip install --user -r requirements.txt
+        fi
+
+        echo "***** Running Tests *****"
+        if [ -e "Pipfile" ]; then
+          python -m pipenv run pytest --version
+          python -m pipenv run pytest "$@"
+        else
+          python -m pip install --user pytest pytest-cov pytest-pspec
+          pytest --version
+          pytest "$@"
+        fi
+      args:
+        - "$(params.pytest-args[*])"

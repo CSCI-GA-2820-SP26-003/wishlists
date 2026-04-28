@@ -40,5 +40,13 @@ spec:
       workspaces:
         - name: output
           workspace: pipeline-workspace
+    - name: unit-tests
+      runAfter:
+        - git-clone
+      taskRef:
+        name: run-unit-tests
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
   workspaces:
     - name: pipeline-workspace
