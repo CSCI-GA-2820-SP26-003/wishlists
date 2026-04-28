@@ -11,6 +11,10 @@ spec:
       description: The reference (branch or ref)
       name: GIT_REF
       type: string
+    - default: python:3.12-slim
+      description: Base image used by lint and test tasks
+      name: IMAGE
+      type: string
   tasks:
     - name: git-clone
       params:
@@ -45,6 +49,23 @@ spec:
         - git-clone
       taskRef:
         name: run-unit-tests
+    - name: lint
+      runAfter:
+        - git-clone
+      taskRef:
+        name: lint
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: sample
+      runAfter:
+        - unit-tests
+        - lint
+      taskRef:
+        name: sample
       workspaces:
         - name: source
           workspace: pipeline-workspace
