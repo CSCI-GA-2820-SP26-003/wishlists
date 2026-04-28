@@ -43,27 +43,32 @@ make test
 
 ## API Endpoints
 
-Base resource: `/wishlists`
+Browser UI: `/`
+
+Swagger UI: `/apidocs/`
+
+Base resource: `/api/wishlists`
 
 ### Wishlists
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/wishlists` | List wishlists |
-| POST | `/wishlists` | Create a wishlist |
-| GET | `/wishlists/{wishlist_id}` | Get one wishlist |
-| PUT | `/wishlists/{wishlist_id}` | Update wishlist name/description |
-| DELETE | `/wishlists/{wishlist_id}` | Delete a wishlist |
+| GET | `/api/wishlists` | List wishlists |
+| POST | `/api/wishlists` | Create a wishlist |
+| GET | `/api/wishlists/{wishlist_id}` | Get one wishlist |
+| PUT | `/api/wishlists/{wishlist_id}` | Update wishlist name/description |
+| DELETE | `/api/wishlists/{wishlist_id}` | Delete a wishlist |
+| POST | `/api/wishlists/{wishlist_id}/private` | Set a wishlist to private |
 
 ### Wishlist Items
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/wishlists/{wishlist_id}/items` | List items in a wishlist |
-| POST | `/wishlists/{wishlist_id}/items` | Create an item in a wishlist |
-| GET | `/wishlists/{wishlist_id}/items/{item_id}` | Get one item in a wishlist |
-| PUT | `/wishlists/{wishlist_id}/items/{item_id}` | Update item in wishlist |
-| DELETE | `/wishlists/{wishlist_id}/items/{item_id}` | Deletes item in a wishlist |
+| GET | `/api/wishlists/{wishlist_id}/items` | List items in a wishlist |
+| POST | `/api/wishlists/{wishlist_id}/items` | Create an item in a wishlist |
+| GET | `/api/wishlists/{wishlist_id}/items/{item_id}` | Get one item in a wishlist |
+| PUT | `/api/wishlists/{wishlist_id}/items/{item_id}` | Update item in wishlist |
+| DELETE | `/api/wishlists/{wishlist_id}/items/{item_id}` | Deletes item in a wishlist |
 
 ## Project Layout
 

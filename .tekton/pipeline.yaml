@@ -1,91 +1,121 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: wishlist-cd-pipeline
+  name: cd-pipeline
 spec:
-  description: Wishlist CD Pipeline for building and deploying the service
   params:
-    - name: repo-url
+    - description: The URL to the git repo
+      name: GIT_REPO
       type: string
-      description: The URL of the git repository
-      default: https://github.com/CSCI-GA-2820-SP26-003/wishlists.git
-    - name: branch
+    - default: master
+      description: The reference (branch or ref)
+      name: GIT_REF
       type: string
-      description: The git branch to use
-      default: master
-    - name: image
+    - default: python:3.12-slim
+      description: Base image used by the lint task
+      name: IMAGE
       type: string
-      description: Reference of the image to build
-      default: quay.io/rofrano/wishlist-service:latest
-  workspaces:
-    - name: shared-workspace
-      description: Shared workspace for pipeline execution
+    - default: image-registry.openshift-image-registry.svc:5000
+      description: Image registry host
+      name: REGISTRY
+      type: string
+    - default: wishlist-service
+      description: Image stream name to build and push
+      name: IMAGE_NAME
+      type: string
+    - default: latest
+      description: Image tag to build and push
+      name: IMAGE_TAG
+      type: string
+    - default: ./Dockerfile
+      description: Path to the Dockerfile to build
+      name: DOCKERFILE
+      type: string
+    - default: .
+      description: Build context path
+      name: CONTEXT
+      type: string
+    - default: "false"
+      description: Verify TLS when pushing to the image registry
+      name: TLSVERIFY
+      type: string
+    - default: docker
+      description: Image manifest format
+      name: FORMAT
+      type: string
+    - default: vfs
+      description: Buildah storage driver
+      name: STORAGE_DRIVER
+      type: string
   tasks:
-    - name: clone
-      taskRef:
-        name: clone
+    - name: git-clone
       params:
-        - name: repo-url
-          value: $(params.repo-url)
-        - name: branch
-          value: $(params.branch)
+        - name: URL
+          value: $(params.GIT_REPO)
+        - name: REVISION
+          value: $(params.GIT_REF)
+        - name: DELETE_EXISTING
+          value: "true"
+        - name: SSL_VERIFY
+          value: "true"
+        - name: SUBMODULES
+          value: "true"
+        - name: DEPTH
+          value: "1"
+        - name: VERBOSE
+          value: "false"
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
       workspaces:
         - name: output
-          workspace: shared-workspace
+          workspace: pipeline-workspace
+    - name: unit-tests
+      runAfter:
+        - git-clone
+      taskRef:
+        name: run-unit-tests
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
     - name: lint
-      taskRef:
-        name: pylint
       runAfter:
-        - clone
-      workspaces:
-        - name: source
-          workspace: shared-workspace
-    - name: test
+        - git-clone
       taskRef:
-        name: test
-      runAfter:
-        - clone
-      workspaces:
-        - name: source
-          workspace: shared-workspace
-    - name: build
-      taskRef:
-        name: buildah
-      runAfter:
-        - test
-        - lint
+        name: lint
       params:
         - name: IMAGE
-          value: $(params.image)
-        - name: DOCKERFILE
-          value: ./Dockerfile
-        - name: CONTEXT
-          value: .
+          value: $(params.IMAGE)
       workspaces:
         - name: source
-          workspace: shared-workspace
----
-apiVersion: tekton.dev/v1beta1
-kind: PipelineRun
-metadata:
-  name: wishlist-cd-pipeline-run
-  generateName: wishlist-cd-pipeline-run-
-spec:
-  pipelineRef:
-    name: wishlist-cd-pipeline
-  params:
-    - name: repo-url
-      value: https://github.com/CSCI-GA-2820-SP26-003/wishlists.git
-    - name: branch
-      value: master
-    - name: image
-      value: quay.io/rofrano/wishlist-service:latest
+          workspace: pipeline-workspace
+    - name: buildah
+      runAfter:
+        - unit-tests
+        - lint
+      taskRef:
+        name: buildah
+      params:
+        - name: IMAGE
+          value: $(params.REGISTRY)/$(context.pipelineRun.namespace)/$(params.IMAGE_NAME):$(params.IMAGE_TAG)
+        - name: DOCKERFILE
+          value: $(params.DOCKERFILE)
+        - name: CONTEXT
+          value: $(params.CONTEXT)
+        - name: TLSVERIFY
+          value: $(params.TLSVERIFY)
+        - name: FORMAT
+          value: $(params.FORMAT)
+        - name: STORAGE_DRIVER
+          value: $(params.STORAGE_DRIVER)
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
   workspaces:
-    - name: shared-workspace
-      volumeClaimTemplate:
-        spec:
-          accessModes: [ "ReadWriteOnce" ]
-          resources:
-            requests:
-              storage: 1Gi
-  serviceAccountName: pipeline
+    - name: pipeline-workspace

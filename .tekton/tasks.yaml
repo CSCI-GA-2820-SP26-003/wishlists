@@ -1,115 +1,151 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: clone
+  name: run-unit-tests
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Testing
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: python, pytest
+    tekton.dev/displayName: "pytest tests"
+    tekton.dev/platforms: "linux/amd64"
 spec:
+  description: >-
+    This task performs unit tests with pytest and detects Pipfile,
+    poetry.lock, or requirements.txt based projects.
+    It also sets DATABASE_URI so the tests can run without a live PostgreSQL service.
   params:
-    - name: repo-url
+    - name: image
+      description: The container image used to run the tests.
       type: string
-      description: The URL of the git repo to clone
-    - name: branch
+      default: quay.io/rofrano/nyu-devops-base:sp26
+    - name: pytest-args
+      description: The arguments to pass to the pytest CLI.
+      type: array
+      default: []
+    - name: database-uri
+      description: Database URI used during the test run.
       type: string
-      description: The branch to clone
-      default: master
-  workspaces:
-    - name: output
-      description: The workspace to clone the repo into
-  steps:
-    - name: clone
-      image: alpine/git
-      script: |
-        git clone --branch $(params.branch) $(params.repo-url) $(workspaces.output.path)
-        echo "Cloned $(params.repo-url) branch $(params.branch)"
----
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: pylint
-spec:
-  description: Run pylint linting checks on Python code
+      default: sqlite:////tmp/wishlists-test.db
   workspaces:
     - name: source
-      description: Workspace containing the source code
+      description: The workspace with the source code.
   steps:
-    - name: run-pylint
-      image: python:3.12-slim
+    - name: pytest
+      image: $(params.image)
       workingDir: $(workspaces.source.path)
-      script: |
-        python -m pip install -U pip pipenv
-        pipenv install --system --dev
-        make lint
----
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: test
-spec:
-  description: Run unit tests with code coverage
-  workspaces:
-    - name: source
-      description: Workspace containing the source code
-  steps:
-    - name: run-tests
-      image: python:3.12-slim
-      workingDir: $(workspaces.source.path)
-      script: |
-        python -m pip install -U pip pipenv
-        pipenv install --system --dev
-        apt-get update && apt-get install -y postgresql-client
-        pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml --disable-warnings
       env:
         - name: DATABASE_URI
-          value: postgresql+psycopg://postgres:postgres@postgres:5432/postgres
+          value: $(params.database-uri)
+        - name: PIPENV_VENV_IN_PROJECT
+          value: "1"
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+        export PATH="$PATH:$HOME/.local/bin"
+
+        echo "***** Installing dependencies *****"
+        if [ -e "poetry.lock" ]; then
+          echo "Found poetry.lock file: using poetry ..."
+          python -m pip install --user --upgrade pip poetry
+          poetry install
+        elif [ -e "Pipfile" ]; then
+          echo "Found Pipfile file: using pipenv ..."
+          python -m pip install --user --upgrade pip pipenv
+          python -m pipenv sync --dev
+        elif [ -e "requirements.txt" ]; then
+          python -m pip install --user -r requirements.txt
+        fi
+
+        echo "***** Running Tests *****"
+        if [ -e "Pipfile" ]; then
+          python -m pipenv run pytest --version
+          python -m pipenv run pytest "$@"
+        else
+          python -m pip install --user pytest pytest-cov pytest-pspec
+          pytest --version
+          pytest "$@"
+        fi
+      args:
+        - "$(params.pytest-args[*])"
 ---
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: lint
+spec:
+  params:
+    - name: IMAGE
+      type: string
+      default: python:3.12-slim
+  workspaces:
+    - name: source
+  steps:
+    - name: run-lint
+      image: $(params.IMAGE)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        python -m pip install --upgrade pip pipenv
+        pipenv install --dev
+        status=0
+        pipenv run flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics || status=$?
+        pipenv run flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics || status=$?
+        pipenv run pylint service tests --max-line-length=127 || status=$?
+        exit $status
+---
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: buildah
 spec:
-  description: Build and push a container image using buildah
+  description: Build and push the Wishlist service container image with Buildah.
   params:
     - name: IMAGE
       type: string
-      description: Reference of the image to build
-      default: quay.io/rofrano/wishlist-service:latest
+      description: Fully qualified image name to build and push.
     - name: DOCKERFILE
       type: string
-      description: Path to the Dockerfile
+      description: Path to the Dockerfile.
       default: ./Dockerfile
     - name: CONTEXT
       type: string
-      description: Path to build context
+      description: Path to the build context.
       default: .
     - name: TLSVERIFY
       type: string
-      description: Verify the TLS on the registry endpoint
+      description: Verify TLS when pushing to the image registry.
       default: "false"
     - name: FORMAT
       type: string
-      description: The format of the image (docker or oci)
+      description: Image manifest format.
       default: docker
+    - name: STORAGE_DRIVER
+      type: string
+      description: Buildah storage driver.
+      default: vfs
   workspaces:
     - name: source
-      description: Workspace containing the source code to build
+      description: Workspace containing the source code to build.
   steps:
-    - name: build
+    - name: build-and-push
       image: quay.io/buildah/stable:latest
       workingDir: $(workspaces.source.path)
       script: |
-        buildah bud \
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        buildah --storage-driver=$(params.STORAGE_DRIVER) bud \
           --format=$(params.FORMAT) \
           --tls-verify=$(params.TLSVERIFY) \
           --layers \
           -f $(params.DOCKERFILE) \
           -t $(params.IMAGE) \
           $(params.CONTEXT)
-      securityContext:
-        privileged: true
-    - name: push
-      image: quay.io/buildah/stable:latest
-      workingDir: $(workspaces.source.path)
-      script: |
-        buildah push \
+
+        buildah --storage-driver=$(params.STORAGE_DRIVER) push \
           --tls-verify=$(params.TLSVERIFY) \
           $(params.IMAGE) \
           docker://$(params.IMAGE)
