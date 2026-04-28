@@ -69,3 +69,43 @@ spec:
         fi
       args:
         - "$(params.pytest-args[*])"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: lint
+spec:
+  params:
+    - name: IMAGE
+      type: string
+      default: python:3.12-slim
+  workspaces:
+    - name: source
+  steps:
+    - name: run-lint
+      image: $(params.IMAGE)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        python -m pip install --upgrade pip pipenv
+        pipenv install --dev
+        status=0
+        pipenv run flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics || status=$?
+        pipenv run flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics || status=$?
+        pipenv run pylint service tests --max-line-length=127 || status=$?
+        exit $status
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: sample
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: done
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      script: |
+        #!/usr/bin/env sh
+        echo "sample task completed"
