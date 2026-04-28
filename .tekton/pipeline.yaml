@@ -12,8 +12,40 @@ spec:
       name: GIT_REF
       type: string
     - default: python:3.12-slim
-      description: Base image used by lint and test tasks
+      description: Base image used by the lint task
       name: IMAGE
+      type: string
+    - default: image-registry.openshift-image-registry.svc:5000
+      description: Image registry host
+      name: REGISTRY
+      type: string
+    - default: wishlist-service
+      description: Image stream name to build and push
+      name: IMAGE_NAME
+      type: string
+    - default: latest
+      description: Image tag to build and push
+      name: IMAGE_TAG
+      type: string
+    - default: ./Dockerfile
+      description: Path to the Dockerfile to build
+      name: DOCKERFILE
+      type: string
+    - default: .
+      description: Build context path
+      name: CONTEXT
+      type: string
+    - default: "false"
+      description: Verify TLS when pushing to the image registry
+      name: TLSVERIFY
+      type: string
+    - default: docker
+      description: Image manifest format
+      name: FORMAT
+      type: string
+    - default: vfs
+      description: Buildah storage driver
+      name: STORAGE_DRIVER
       type: string
   tasks:
     - name: git-clone
@@ -23,15 +55,15 @@ spec:
         - name: REVISION
           value: $(params.GIT_REF)
         - name: DELETE_EXISTING
-          value: 'true'
+          value: "true"
         - name: SSL_VERIFY
-          value: 'true'
+          value: "true"
         - name: SUBMODULES
-          value: 'true'
+          value: "true"
         - name: DEPTH
-          value: '1'
+          value: "1"
         - name: VERBOSE
-          value: 'false'
+          value: "false"
       taskRef:
         params:
           - name: kind
@@ -63,12 +95,25 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
-    - name: sample
+    - name: buildah
       runAfter:
         - unit-tests
         - lint
       taskRef:
-        name: sample
+        name: buildah
+      params:
+        - name: IMAGE
+          value: $(params.REGISTRY)/$(context.pipelineRun.namespace)/$(params.IMAGE_NAME):$(params.IMAGE_TAG)
+        - name: DOCKERFILE
+          value: $(params.DOCKERFILE)
+        - name: CONTEXT
+          value: $(params.CONTEXT)
+        - name: TLSVERIFY
+          value: $(params.TLSVERIFY)
+        - name: FORMAT
+          value: $(params.FORMAT)
+        - name: STORAGE_DRIVER
+          value: $(params.STORAGE_DRIVER)
       workspaces:
         - name: source
           workspace: pipeline-workspace

@@ -1,0 +1,49 @@
+# Tekton CD Pipeline for Wishlist Service
+
+This directory contains the OpenShift Pipelines resources for the Wishlist
+service CD flow.
+
+## Files
+
+- `workspace.yaml`: PersistentVolumeClaim used by the pipeline workspace.
+- `tasks.yaml`: Custom tasks for unit tests, linting, and the Buildah image build.
+- `pipeline.yaml`: Pipeline orchestration for clone, test, lint, and image build.
+
+## Pipeline Flow
+
+```text
+git-clone
+  |-- unit-tests --|
+  |-- lint ------- |--> buildah
+```
+
+The `buildah` pipeline task runs only after both `unit-tests` and `lint`
+complete successfully.
+
+## Pipeline Parameters
+
+| Parameter | Description | Default |
+| --- | --- | --- |
+| `GIT_REPO` | Git repository URL to clone | Required |
+| `GIT_REF` | Branch, tag, or ref to build | `master` |
+| `IMAGE` | Base image used by the lint task | `python:3.12-slim` |
+| `REGISTRY` | Image registry host | `image-registry.openshift-image-registry.svc:5000` |
+| `IMAGE_NAME` | Image stream name to build and push | `wishlist-service` |
+| `IMAGE_TAG` | Image tag to build and push | `latest` |
+| `DOCKERFILE` | Dockerfile path | `./Dockerfile` |
+| `CONTEXT` | Build context path | `.` |
+| `TLSVERIFY` | Verify TLS when pushing to the image registry | `false` |
+| `FORMAT` | Image manifest format | `docker` |
+| `STORAGE_DRIVER` | Buildah storage driver | `vfs` |
+
+## Apply Resources
+
+```bash
+kubectl apply -f .tekton/workspace.yaml
+kubectl apply -f .tekton/tasks.yaml
+kubectl apply -f .tekton/pipeline.yaml
+```
+
+After starting a PipelineRun in the OpenShift console, verify that the
+`buildah` task starts after `unit-tests` and `lint`, then completes
+successfully.

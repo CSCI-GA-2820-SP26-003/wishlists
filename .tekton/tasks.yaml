@@ -99,13 +99,55 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: sample
+  name: buildah
 spec:
+  description: Build and push the Wishlist service container image with Buildah.
+  params:
+    - name: IMAGE
+      type: string
+      description: Fully qualified image name to build and push.
+    - name: DOCKERFILE
+      type: string
+      description: Path to the Dockerfile.
+      default: ./Dockerfile
+    - name: CONTEXT
+      type: string
+      description: Path to the build context.
+      default: .
+    - name: TLSVERIFY
+      type: string
+      description: Verify TLS when pushing to the image registry.
+      default: "false"
+    - name: FORMAT
+      type: string
+      description: Image manifest format.
+      default: docker
+    - name: STORAGE_DRIVER
+      type: string
+      description: Buildah storage driver.
+      default: vfs
   workspaces:
     - name: source
+      description: Workspace containing the source code to build.
   steps:
-    - name: done
-      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+    - name: build-and-push
+      image: quay.io/buildah/stable:latest
+      workingDir: $(workspaces.source.path)
       script: |
-        #!/usr/bin/env sh
-        echo "sample task completed"
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        buildah --storage-driver=$(params.STORAGE_DRIVER) bud \
+          --format=$(params.FORMAT) \
+          --tls-verify=$(params.TLSVERIFY) \
+          --layers \
+          -f $(params.DOCKERFILE) \
+          -t $(params.IMAGE) \
+          $(params.CONTEXT)
+
+        buildah --storage-driver=$(params.STORAGE_DRIVER) push \
+          --tls-verify=$(params.TLSVERIFY) \
+          $(params.IMAGE) \
+          docker://$(params.IMAGE)
+      securityContext:
+        privileged: true
