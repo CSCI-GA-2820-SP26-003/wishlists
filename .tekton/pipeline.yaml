@@ -49,6 +49,9 @@ spec:
         - git-clone
       taskRef:
         name: run-unit-tests
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
     - name: lint
       runAfter:
         - git-clone
