@@ -1,0 +1,64 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: cd-trigger-binding
+spec:
+  params:
+    - name: gitrepositoryurl
+      value: $(body.repository.clone_url)
+    - name: gitrevision
+      value: $(body.after)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: cd-trigger-template
+spec:
+  params:
+    - name: gitrepositoryurl
+    - name: gitrevision
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: cd-pipeline-run-
+      spec:
+        serviceAccountName: pipeline
+        pipelineRef:
+          name: cd-pipeline
+        params:
+          - name: GIT_REPO
+            value: $(tt.params.gitrepositoryurl)
+          - name: GIT_REF
+            value: $(tt.params.gitrevision)
+        workspaces:
+          - name: pipeline-workspace
+            persistentVolumeClaim:
+              claimName: pipeline-pvc
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: Trigger
+metadata:
+  name: cd-trigger
+spec:
+  interceptors:
+    - ref:
+        name: cel
+        kind: ClusterInterceptor
+      params:
+        - name: filter
+          value: "header.match('X-GitHub-Event', 'push') && body.ref == 'refs/heads/master'"
+  bindings:
+    - ref: cd-trigger-binding
+  template:
+    ref: cd-trigger-template
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: cd-listener
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - name: github-master-push
+      triggerRef: cd-trigger
