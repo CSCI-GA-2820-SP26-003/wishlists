@@ -39,7 +39,9 @@ spec:
         - name: DATABASE_URI
           value: $(params.database-uri)
         - name: PIPENV_VENV_IN_PROJECT
-          value: "1"
+          value: "0"
+        - name: WORKON_HOME
+          value: /tmp/pipenv-unit-tests
       script: |
         #!/bin/bash
         set -euo pipefail
@@ -85,6 +87,11 @@ spec:
     - name: run-lint
       image: $(params.IMAGE)
       workingDir: $(workspaces.source.path)
+      env:
+        - name: PIPENV_VENV_IN_PROJECT
+          value: "0"
+        - name: WORKON_HOME
+          value: /tmp/pipenv-lint
       script: |
         #!/usr/bin/env bash
         set -e
@@ -100,9 +107,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: buildah
-  annotations:
-    io.kubernetes.cri-o.userns-mode: "auto:size=65536;map-to-root=true"
-    io.openshift.builder: "true"
 spec:
   description: Build and push the Wishlist service container image with Buildah.
   params:
@@ -157,8 +161,6 @@ spec:
       - name: HOME
         value: /tekton/home
     securityContext:
-      runAsNonRoot: true
-      runAsUser: 1000
       capabilities:
         add:
           - SETFCAP

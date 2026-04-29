@@ -8,8 +8,8 @@ WORKDIR /app
 
 COPY Pipfile Pipfile.lock ./
 
-RUN sudo python -m pip install --upgrade pip pipenv \
-    && sudo pipenv install --system --dev
+RUN python -m pip install --upgrade pip pipenv \
+    && pipenv install --system --dev
 
 COPY . .
 
