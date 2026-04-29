@@ -210,6 +210,10 @@ metadata:
   name: deploy
 spec:
   description: Deploy the Wishlist service and PostgreSQL to OpenShift.
+  results:
+    - name: BASE_URL
+      type: string
+      description: Route URL that the Behave task should test against.
   params:
     - name: IMAGE
       type: string
@@ -226,6 +230,10 @@ spec:
       type: string
       description: Wishlist container name in the deployment.
       default: wishlists
+    - name: BASE_URL
+      type: string
+      description: Optional override for the route URL used by Behave.
+      default: ""
   workspaces:
     - name: source
       description: Workspace containing the Kubernetes manifests.
@@ -245,9 +253,31 @@ spec:
         oc apply -f k8s/service.yaml
         oc set image --local -f k8s/deployment.yaml -o yaml \
           $(params.CONTAINER_NAME)=$(params.IMAGE) | oc apply -f -
+        oc apply -f .tekton/app-route.yaml
         oc rollout status deployment/$(params.DEPLOYMENT_NAME) --timeout=180s
         oc wait --for=condition=available \
           deployment/$(params.DEPLOYMENT_NAME) --timeout=180s
+
+        if [[ -n "$(params.BASE_URL)" ]]; then
+          printf "%s" "$(params.BASE_URL)" | tee $(results.BASE_URL.path)
+          exit 0
+        fi
+
+        route_host=""
+        for _ in $(seq 1 90); do
+          route_host="$(oc get route wishlists -o jsonpath='{.status.ingress[0].host}' 2>/dev/null || true)"
+          if [[ -n "${route_host}" ]]; then
+            break
+          fi
+          sleep 2
+        done
+
+        if [[ -z "${route_host}" ]]; then
+          echo "wishlists route was not admitted within 180 seconds" >&2
+          exit 1
+        fi
+
+        printf "http://%s" "${route_host}" | tee $(results.BASE_URL.path)
 ---
 apiVersion: tekton.dev/v1
 kind: Task

@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: wishlists
+  labels:
+    app: wishlists
+spec:
+  to:
+    kind: Service
+    name: wishlists
+    weight: 100
+  port:
+    targetPort: 80
+  wildcardPolicy: None

@@ -55,7 +55,7 @@ spec:
       description: Image used to run Behave and Selenium BDD tests
       name: BEHAVE_IMAGE
       type: string
-    - default: http://wishlists
+    - default: ""
       description: Base URL of the deployed Wishlist service UI
       name: BASE_URL
       type: string
@@ -147,6 +147,8 @@ spec:
           value: $(params.REGISTRY)/$(context.pipelineRun.namespace)/$(params.IMAGE_NAME)@$(tasks.buildah.results.IMAGE_DIGEST)
         - name: CLI_IMAGE
           value: $(params.DEPLOYER_IMAGE)
+        - name: BASE_URL
+          value: $(params.BASE_URL)
       workspaces:
         - name: source
           workspace: pipeline-workspace
@@ -159,7 +161,7 @@ spec:
         - name: IMAGE
           value: $(params.BEHAVE_IMAGE)
         - name: BASE_URL
-          value: $(params.BASE_URL)
+          value: $(tasks.deploy.results.BASE_URL)
         - name: WAIT_SECONDS
           value: $(params.WAIT_SECONDS)
         - name: DRIVER
