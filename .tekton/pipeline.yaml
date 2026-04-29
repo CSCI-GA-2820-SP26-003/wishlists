@@ -51,6 +51,22 @@ spec:
       description: OpenShift CLI image used by the deploy task
       name: DEPLOYER_IMAGE
       type: string
+    - default: quay.io/rofrano/pipeline-selenium:sp26
+      description: Image used to run Behave and Selenium BDD tests
+      name: BEHAVE_IMAGE
+      type: string
+    - default: http://wishlists
+      description: Base URL of the deployed Wishlist service UI
+      name: BASE_URL
+      type: string
+    - default: "30"
+      description: Seconds Selenium should wait for UI elements
+      name: WAIT_SECONDS
+      type: string
+    - default: chrome
+      description: Browser driver used by Selenium
+      name: DRIVER
+      type: string
   tasks:
     - name: git-clone
       params:
@@ -131,6 +147,23 @@ spec:
           value: $(params.REGISTRY)/$(context.pipelineRun.namespace)/$(params.IMAGE_NAME)@$(tasks.buildah.results.IMAGE_DIGEST)
         - name: CLI_IMAGE
           value: $(params.DEPLOYER_IMAGE)
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: behave
+      runAfter:
+        - deploy
+      taskRef:
+        name: behave
+      params:
+        - name: IMAGE
+          value: $(params.BEHAVE_IMAGE)
+        - name: BASE_URL
+          value: $(params.BASE_URL)
+        - name: WAIT_SECONDS
+          value: $(params.WAIT_SECONDS)
+        - name: DRIVER
+          value: $(params.DRIVER)
       workspaces:
         - name: source
           workspace: pipeline-workspace

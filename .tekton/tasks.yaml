@@ -248,3 +248,53 @@ spec:
         oc rollout status deployment/$(params.DEPLOYMENT_NAME) --timeout=180s
         oc wait --for=condition=available \
           deployment/$(params.DEPLOYMENT_NAME) --timeout=180s
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: behave
+spec:
+  description: Run Behave BDD tests against the deployed Wishlist service UI.
+  params:
+    - name: IMAGE
+      type: string
+      description: Container image with Python, Behave, Selenium, and browser drivers.
+      default: quay.io/rofrano/pipeline-selenium:sp26
+    - name: BASE_URL
+      type: string
+      description: Base URL of the deployed Wishlist service UI.
+      default: http://wishlists
+    - name: WAIT_SECONDS
+      type: string
+      description: Seconds Selenium should wait for UI elements.
+      default: "30"
+    - name: DRIVER
+      type: string
+      description: Browser driver used by Selenium.
+      default: chrome
+  workspaces:
+    - name: source
+      description: Workspace containing the source code and feature files.
+  steps:
+    - name: run-behave
+      image: $(params.IMAGE)
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: BASE_URL
+          value: $(params.BASE_URL)
+        - name: WAIT_SECONDS
+          value: $(params.WAIT_SECONDS)
+        - name: DRIVER
+          value: $(params.DRIVER)
+        - name: PIPENV_VENV_IN_PROJECT
+          value: "0"
+        - name: WORKON_HOME
+          value: /tmp/pipenv-behave
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        export PATH="$PATH:$HOME/.local/bin"
+
+        python -m pip install --user --upgrade pip pipenv
+        python -m pipenv sync --dev
+        python -m pipenv run behave
