@@ -24,6 +24,7 @@ from flask_restx import Api, Resource, fields
 from werkzeug.exceptions import HTTPException
 from service.models import Wishlist, Item, DataValidationError
 from service.common import status  # HTTP Status Codes
+from service.demo_ui import get_demo_html
 
 ERROR_TITLES = {
     status.HTTP_400_BAD_REQUEST: "Bad Request",
@@ -248,6 +249,12 @@ def index():
 def healthcheck():
     """Health endpoint for liveness and readiness probes."""
     return jsonify({"status": "OK"}), status.HTTP_200_OK
+
+
+@app.route("/demo", methods=["GET"])
+def demo():
+    """Simple HTML demo page to exercise the API."""
+    return get_demo_html(), status.HTTP_200_OK, {"Content-Type": "text/html; charset=utf-8"}
 
 
 ######################################################################
@@ -735,3 +742,56 @@ class WishlistItemResource(Resource):
     def delete(self, wishlist_id, item_id):
         """Delete an Item from a Wishlist."""
         return delete_wishlist_item(wishlist_id, item_id)
+
+
+@app.route("/wishlists", methods=["GET", "POST"])
+def legacy_wishlist_collection():
+    """Legacy non-RESTX collection routes kept for demo/backward compatibility."""
+    if request.method == "GET":
+        payload, code = list_wishlists()
+        return jsonify(payload), code
+    payload, code, headers = create_wishlists()
+    return jsonify(payload), code, headers
+
+
+@app.route("/wishlists/<int:wishlist_id>", methods=["GET", "PUT", "DELETE"])
+def legacy_wishlist_resource(wishlist_id):
+    """Legacy non-RESTX wishlist routes kept for demo/backward compatibility."""
+    if request.method == "GET":
+        payload, code = get_wishlist(wishlist_id)
+        return jsonify(payload), code
+    if request.method == "PUT":
+        payload, code = update_wishlists(wishlist_id)
+        return jsonify(payload), code
+    payload, code = delete_wishlists(wishlist_id)
+    return payload, code
+
+
+@app.route("/wishlists/<int:wishlist_id>/private", methods=["POST"])
+def legacy_wishlist_private(wishlist_id):
+    """Legacy non-RESTX wishlist action route kept for compatibility."""
+    payload, code = set_wishlist_private(wishlist_id)
+    return jsonify(payload), code
+
+
+@app.route("/wishlists/<int:wishlist_id>/items", methods=["GET", "POST"])
+def legacy_wishlist_items_collection(wishlist_id):
+    """Legacy non-RESTX item collection routes kept for compatibility."""
+    if request.method == "GET":
+        payload, code = list_wishlist_items(wishlist_id)
+        return jsonify(payload), code
+    payload, code, headers = create_wishlist_items(wishlist_id)
+    return jsonify(payload), code, headers
+
+
+@app.route("/wishlists/<int:wishlist_id>/items/<int:item_id>", methods=["GET", "PUT", "DELETE"])
+def legacy_wishlist_item_resource(wishlist_id, item_id):
+    """Legacy non-RESTX item routes kept for compatibility."""
+    if request.method == "GET":
+        payload, code = get_wishlist_item(wishlist_id, item_id)
+        return jsonify(payload), code
+    if request.method == "PUT":
+        payload, code = update_wishlist_item(wishlist_id, item_id)
+        return jsonify(payload), code
+    payload, code = delete_wishlist_item(wishlist_id, item_id)
+    return payload, code
