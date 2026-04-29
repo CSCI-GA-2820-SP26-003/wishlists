@@ -36,6 +36,10 @@ complete successfully.
 | `FORMAT` | Image manifest format | `docker` |
 | `STORAGE_DRIVER` | Buildah storage driver | `vfs` |
 
+The Buildah task runs as a non-root user with user namespaces and `vfs` storage.
+This avoids requiring the `pipeline` service account to run privileged TaskRun
+pods in OpenShift.
+
 ## Apply Resources
 
 ```bash
