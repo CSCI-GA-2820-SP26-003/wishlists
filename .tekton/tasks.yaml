@@ -100,12 +100,19 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: buildah
+  annotations:
+    io.kubernetes.cri-o.userns-mode: "auto:size=65536;map-to-root=true"
+    io.openshift.builder: "true"
 spec:
   description: Build and push the Wishlist service container image with Buildah.
   params:
     - name: IMAGE
       type: string
       description: Fully qualified image name to build and push.
+    - name: BUILDER_IMAGE
+      type: string
+      description: Buildah image used to build and push the container image.
+      default: quay.io/buildah/stable:latest
     - name: DOCKERFILE
       type: string
       description: Path to the Dockerfile.
@@ -126,18 +133,48 @@ spec:
       type: string
       description: Buildah storage driver.
       default: vfs
+    - name: BUILD_EXTRA_ARGS
+      type: string
+      description: Extra arguments passed to buildah bud.
+      default: ""
+    - name: PUSH_EXTRA_ARGS
+      type: string
+      description: Extra arguments passed to buildah push.
+      default: ""
+    - name: SKIP_PUSH
+      type: string
+      description: Skip pushing the image after the build.
+      default: "false"
+  results:
+    - name: IMAGE_DIGEST
+      type: string
+      description: Digest of the image that was pushed.
   workspaces:
     - name: source
       description: Workspace containing the source code to build.
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /tekton/home
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        add:
+          - SETFCAP
   steps:
     - name: build-and-push
-      image: quay.io/buildah/stable:latest
+      image: $(params.BUILDER_IMAGE)
       workingDir: $(workspaces.source.path)
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
 
+        echo "Running Buildah as:"
+        id
+
         buildah --storage-driver=$(params.STORAGE_DRIVER) bud \
+          $(params.BUILD_EXTRA_ARGS) \
           --format=$(params.FORMAT) \
           --tls-verify=$(params.TLSVERIFY) \
           --layers \
@@ -145,9 +182,22 @@ spec:
           -t $(params.IMAGE) \
           $(params.CONTEXT)
 
+        if [[ "$(params.SKIP_PUSH)" == "true" ]]; then
+          echo "Push skipped"
+          exit 0
+        fi
+
         buildah --storage-driver=$(params.STORAGE_DRIVER) push \
+          $(params.PUSH_EXTRA_ARGS) \
           --tls-verify=$(params.TLSVERIFY) \
+          --digestfile $(workspaces.source.path)/image-digest \
           $(params.IMAGE) \
           docker://$(params.IMAGE)
-      securityContext:
-        privileged: true
+
+        cat $(workspaces.source.path)/image-digest | tee $(results.IMAGE_DIGEST.path)
+      volumeMounts:
+        - name: varlibcontainers
+          mountPath: /tekton/home/.local/share/containers
+  volumes:
+    - name: varlibcontainers
+      emptyDir: {}
