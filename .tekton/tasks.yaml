@@ -277,7 +277,13 @@ spec:
           exit 1
         fi
 
-        printf "http://%s" "${route_host}" | tee $(results.BASE_URL.path)
+        route_scheme="http"
+        route_tls="$(oc get route wishlists -o jsonpath='{.spec.tls.termination}' 2>/dev/null || true)"
+        if [[ -n "${route_tls}" ]]; then
+          route_scheme="https"
+        fi
+
+        printf "%s://%s" "${route_scheme}" "${route_host}" | tee $(results.BASE_URL.path)
 ---
 apiVersion: tekton.dev/v1
 kind: Task
