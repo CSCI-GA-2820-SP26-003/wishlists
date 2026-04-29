@@ -47,6 +47,10 @@ spec:
       description: Buildah storage driver
       name: STORAGE_DRIVER
       type: string
+    - default: quay.io/openshift/origin-cli:4.18
+      description: OpenShift CLI image used by the deploy task
+      name: DEPLOYER_IMAGE
+      type: string
   tasks:
     - name: git-clone
       params:
@@ -114,6 +118,19 @@ spec:
           value: $(params.FORMAT)
         - name: STORAGE_DRIVER
           value: $(params.STORAGE_DRIVER)
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: deploy
+      runAfter:
+        - buildah
+      taskRef:
+        name: deploy
+      params:
+        - name: IMAGE
+          value: $(params.REGISTRY)/$(context.pipelineRun.namespace)/$(params.IMAGE_NAME)@$(tasks.buildah.results.IMAGE_DIGEST)
+        - name: CLI_IMAGE
+          value: $(params.DEPLOYER_IMAGE)
       workspaces:
         - name: source
           workspace: pipeline-workspace

@@ -203,3 +203,48 @@ spec:
   volumes:
     - name: varlibcontainers
       emptyDir: {}
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy
+spec:
+  description: Deploy the Wishlist service and PostgreSQL to OpenShift.
+  params:
+    - name: IMAGE
+      type: string
+      description: Fully qualified image name to deploy.
+    - name: CLI_IMAGE
+      type: string
+      description: OpenShift CLI image used to apply manifests.
+      default: quay.io/openshift/origin-cli:4.18
+    - name: DEPLOYMENT_NAME
+      type: string
+      description: Wishlist deployment name.
+      default: wishlists
+    - name: CONTAINER_NAME
+      type: string
+      description: Wishlist container name in the deployment.
+      default: wishlists
+  workspaces:
+    - name: source
+      description: Workspace containing the Kubernetes manifests.
+  steps:
+    - name: apply-manifests
+      image: $(params.CLI_IMAGE)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        oc apply -f k8s/postgres/secret.yaml
+        oc apply -f k8s/postgres/service.yaml
+        oc apply -f k8s/postgres/statefulset.yaml
+        oc rollout status statefulset/wishlists-db --timeout=180s
+
+        oc apply -f k8s/service.yaml
+        oc set image --local -f k8s/deployment.yaml -o yaml \
+          $(params.CONTAINER_NAME)=$(params.IMAGE) | oc apply -f -
+        oc rollout status deployment/$(params.DEPLOYMENT_NAME) --timeout=180s
+        oc wait --for=condition=available \
+          deployment/$(params.DEPLOYMENT_NAME) --timeout=180s
