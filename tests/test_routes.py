@@ -18,7 +18,7 @@
 TestWishlist API Service Test Suite
 """
 
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-many-lines
 import os
 import logging
 from unittest import TestCase
@@ -31,6 +31,7 @@ DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
 BASE_URL = "/api/wishlists"
+LEGACY_BASE_URL = "/wishlists"
 HEALTH_URL = "/api/health"
 DOCS_URL = "/apidocs/"
 
@@ -130,6 +131,117 @@ class TestYourResourceService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("text/html", resp.headers.get("Content-Type", ""))
         self.assertIn(b"Final Demo", resp.data)
+
+    def test_health_endpoint_without_api_prefix(self):
+        """It should return healthy status from /health for probes"""
+        resp = self.client.get("/health")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.get_json(), {"status": "OK"})
+
+    def _exercise_legacy_wishlist_demo_paths(self, base):
+        post = self.client.post(
+            base,
+            json={
+                "name": "Legacy Route Test",
+                "customer_id": 4242,
+                "description": "demo compatibility",
+            },
+        )
+        self.assertEqual(post.status_code, status.HTTP_201_CREATED)
+        wid = post.get_json()["id"]
+        listed = self.client.get(base)
+        self.assertEqual(listed.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(listed.get_json(), list)
+        got = self.client.get(f"{base}/{wid}")
+        self.assertEqual(got.status_code, status.HTTP_200_OK)
+        self.assertEqual(got.get_json()["id"], wid)
+        priv = self.client.post(f"{base}/{wid}/private")
+        self.assertEqual(priv.status_code, status.HTTP_200_OK)
+        self.assertTrue(priv.get_json().get("is_private"))
+        put = self.client.put(
+            f"{base}/{wid}",
+            json={"name": "Legacy Updated", "description": "done"},
+        )
+        self.assertEqual(put.status_code, status.HTTP_200_OK)
+        ipost = self.client.post(
+            f"{base}/{wid}/items",
+            json={
+                "product_id": "legacy-sku",
+                "product_name": "Legacy Item",
+                "variant_id": "legacy-var",
+                "quantity": 1,
+            },
+        )
+        self.assertEqual(ipost.status_code, status.HTTP_201_CREATED)
+        iid = ipost.get_json()["id"]
+        self.assertEqual(
+            self.client.get(f"{base}/{wid}/items").status_code, status.HTTP_200_OK
+        )
+        self.assertEqual(
+            self.client.get(f"{base}/{wid}/items/{iid}").status_code, status.HTTP_200_OK
+        )
+        iupd = self.client.put(
+            f"{base}/{wid}/items/{iid}",
+            json={
+                "product_id": "legacy-sku",
+                "product_name": "Legacy Item Updated",
+                "variant_id": "legacy-var",
+                "quantity": 2,
+            },
+        )
+        self.assertEqual(iupd.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            self.client.delete(f"{base}/{wid}/items/{iid}").status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+        self.assertEqual(
+            self.client.delete(f"{base}/{wid}").status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+    def test_legacy_wishlist_routes_demo_paths(self):
+        """Legacy /wishlists routes should match behavior used by the demo page"""
+        self._exercise_legacy_wishlist_demo_paths(LEGACY_BASE_URL)
+
+    def test_legacy_list_queries_match_api(self):
+        """Legacy list + query params should return the same JSON as /api/wishlists."""
+        wishlists = self._create_wishlists(3)
+        target = wishlists[0]
+        WishlistFactory(description="Legacy query alpha").create()
+        WishlistFactory(description="Legacy query alpha").create()
+
+        cases = [
+            "",
+            f"?customer_id={target.customer_id}",
+            f"?name={target.name}",
+            "?description=Legacy query alpha",
+            "?customer_id=0",
+            "?description=no-such-rows-legacy",
+        ]
+        for suffix in cases:
+            api_resp = self.client.get(f"{BASE_URL}{suffix}")
+            leg_resp = self.client.get(f"{LEGACY_BASE_URL}{suffix}")
+            self.assertEqual(api_resp.status_code, leg_resp.status_code, msg=suffix)
+            self.assertEqual(api_resp.get_json(), leg_resp.get_json(), msg=suffix)
+
+    def test_legacy_list_bad_customer_id_matches_api(self):
+        """Legacy list should reject invalid customer_id like the API."""
+        resp_api = self.client.get(f"{BASE_URL}?customer_id=not-int")
+        resp_leg = self.client.get(f"{LEGACY_BASE_URL}?customer_id=not-int")
+        self.assertEqual(resp_api.status_code, resp_leg.status_code)
+        self.assertEqual(resp_api.get_json(), resp_leg.get_json())
+
+    def test_legacy_list_items_product_name_matches_api(self):
+        """Legacy item list + product_name filter should match the API."""
+        wishlist = WishlistFactory()
+        wishlist.create()
+        ItemFactory(wishlist_id=wishlist.id, product_name="LegacyFilterA").create()
+        ItemFactory(wishlist_id=wishlist.id, product_name="LegacyFilterB").create()
+        for suffix in ["", "?product_name=LegacyFilterA", "?product_name=nope"]:
+            api_resp = self.client.get(f"{BASE_URL}/{wishlist.id}/items{suffix}")
+            leg_resp = self.client.get(f"{LEGACY_BASE_URL}/{wishlist.id}/items{suffix}")
+            self.assertEqual(api_resp.status_code, leg_resp.status_code, msg=suffix)
+            self.assertEqual(api_resp.get_json(), leg_resp.get_json(), msg=suffix)
 
     def test_health_endpoint(self):
         """It should return healthy status from the API prefix"""
