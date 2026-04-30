@@ -124,6 +124,13 @@ class TestYourResourceService(TestCase):
         self.assertIn(b'id="delete-btn"', resp.data)
         self.assertIn(b'id="search_results"', resp.data)
 
+    def test_demo_page(self):
+        """It should serve the interactive demo page"""
+        resp = self.client.get("/demo")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("text/html", resp.headers.get("Content-Type", ""))
+        self.assertIn(b"Final Demo", resp.data)
+
     def test_health_endpoint(self):
         """It should return healthy status from the API prefix"""
         resp = self.client.get(HEALTH_URL)
